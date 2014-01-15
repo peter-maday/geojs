@@ -27,6 +27,7 @@ set(_source_files
   core/featureCollection.js
   core/layerSource.js
   core/archiveLayerSource.js
+  core/floodLayerSource.js
   core/command.js
   core/updateRequest.js
   core/prepareForRenderRequest.js
