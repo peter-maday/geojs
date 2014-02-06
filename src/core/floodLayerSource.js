@@ -109,7 +109,7 @@ geoModule.floodLayerSource = function() {
           console.log(errorString);
           m_onError(errorString);
         } else {
-          reader = ogs.vgl.geojsonReader();
+          reader = vglModule.geojsonReader();
           retVal = reader.readGJObject(response.result.data);
         }
       },

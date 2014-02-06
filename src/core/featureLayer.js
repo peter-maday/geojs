@@ -141,7 +141,7 @@ geoModule.featureLayer = function(options, feature) {
     }
 
     // Assuming that first variable is the scalar
-    var varnames = this.dataSource().variableNames(), lut;
+    var varnames = this.dataSource().variableNames(), lut = null;
 
     if (varnames.length > 0) {
       lut = this.lookupTable(varnames[0]);
