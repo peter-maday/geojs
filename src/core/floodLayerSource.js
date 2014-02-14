@@ -31,7 +31,8 @@ geoModule.floodLayerSource = function() {
   geoModule.layerSource.call(this, 'dummy_id', 'flood', 'the path to nowhere');
 
   var m_time = -1,
-      m_resultCache = null;
+      m_resultCache = null,
+      m_featureLayer = null;
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -71,12 +72,42 @@ geoModule.floodLayerSource = function() {
     m_resultCache = null;
   };
 
+  this.setLayer = function(featureLayer) {
+    m_featureLayer = featureLayer;
+  };
+
+  var getPoints = function(id) {
+    var errorString,
+        pointUrl = '/services/floodmap/' + id,
+        reader, geoJson;
+    $.get(pointUrl, function(response) {
+        if (response.error !== null) {
+          errorString = "[error] " + response.error ?
+            response.error : "no results returned from server";
+          console.log(errorString);
+        } else {
+
+          console.log("Starting to read GeoJSON")
+
+          if (response.result.geoJson) {
+            reader = vglModule.geojsonReader();
+            geoJson = reader.readGJObject(response.result.geoJson);
+            m_featureLayer.addData(geoJson);
+          }
+
+          if (response.result.hasMore) {
+            setTimeout(function() {getPoints(id)}, 200);
+          }
+        }
+      }, 'json');
+  };
+
   ////////////////////////////////////////////////////////////////////////////
   /**
    * Return raw data
    */
   ////////////////////////////////////////////////////////////////////////////
-  this.getData = function(time, callback) {
+  this.getData = function(time) {
 
     if (m_time === time) {
       console.log('[info] No new data as timestamp has not changed.');
@@ -84,33 +115,23 @@ geoModule.floodLayerSource = function() {
     }
     m_time = time;
 
-    var asyncVal = false,
-        retVal = [],
-        errorString = null,
-        reader = null;
-
-    if (callback) {
-      asyncVal = true;
-    }
+    var errorString = null;
 
     $.ajax({
       type: 'POST',
-      url: '/services/data/calculate/floodmap',
+      url: '/services/floodmap',
       data: {
-        bb: null,
-        seaLevelRise: null
+        bbox: null,
+        rise: null
       },
       dataType: 'json',
-      async: asyncVal,
       success: function(response) {
         if (response.error !== null) {
           errorString = "[error] " + response.error ?
             response.error : "no results returned from server";
           console.log(errorString);
-          m_onError(errorString);
         } else {
-          reader = vglModule.geojsonReader();
-          retVal = reader.readGJObject(response.result.data);
+          getPoints(response.result.id);
         }
       },
       error: function(jqXHR, textStatus, errorThrown ) {
@@ -119,11 +140,7 @@ geoModule.floodLayerSource = function() {
       }
     });
 
-    if (callback) {
-      callback(retVal);
-    }
-    m_resultCache = retVal;
-    return retVal;
+    return null;
   };
 
   ////////////////////////////////////////////////////////////////////////////

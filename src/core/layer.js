@@ -335,6 +335,11 @@ geoModule.layer = function(options, source) {
   this.setDataSource = function(source) {
     if (m_dataSource !== source) {
       m_dataSource = source;
+
+      // If the source will accept the layer the call the setter
+      if (source.setLayer)
+        source.setLayer(this);
+
       this.modified();
       return true;
     }

@@ -226,6 +226,40 @@ geoModule.featureLayer = function(options, feature) {
     }
   };
 
+  this.addData = function(data) {
+
+    var geomFeature = null,
+        i = 0,
+        lut = this.lookupTable();
+
+    m_newFeatures.length = 0;
+
+    // Create legend if not created earlier
+    this.updateLegend(false);
+
+    for(i = 0; i < data.length; ++i) {
+      switch(data[i].type()) {
+        case vglModule.data.geometry:
+          geomFeature = geoModule.geometryFeature(data[i]);
+          geomFeature.material().setBinNumber(this.binNumber());
+          geomFeature.setLookupTable(lut);
+          m_newFeatures.push(geomFeature);
+          break;
+        case vglModule.data.raster:
+          break;
+        default:
+          console.log('[warning] Data type not handled', data.type());
+      }
+    }
+
+    m_features = m_features.concat(m_newFeatures.slice(0));
+
+    if (data.length > 0) {
+      m_updateTime. modified();
+      this.setOpacity(this.opacity());
+    }
+  };
+
   ////////////////////////////////////////////////////////////////////////////
   /**
    * Update layer to a particular time
