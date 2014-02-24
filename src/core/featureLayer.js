@@ -38,7 +38,8 @@ geoModule.featureLayer = function(options, feature) {
       m_updateTime = ogs.vgl.timestamp(),
       m_legend = null,
       m_invalidData = true,
-      m_visible = true;
+      m_visible = true,
+      m_request;
 
   if (feature) {
     m_newFeatures.push(feature);
@@ -258,6 +259,10 @@ geoModule.featureLayer = function(options, feature) {
       m_updateTime. modified();
       this.setOpacity(this.opacity());
     }
+
+    // Trigger a redraw
+    if (m_request)
+      m_request.requestRedraw();
   };
 
   ////////////////////////////////////////////////////////////////////////////
@@ -275,6 +280,9 @@ geoModule.featureLayer = function(options, feature) {
       console.log('[info] Invalid request.');
       return;
     }
+
+    // Cache the request so we can use it in add data
+    m_request = request;
 
     var i = 0,
         time = request.time(),
