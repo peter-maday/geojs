@@ -22,15 +22,16 @@
  * can be provided with the appropriate error message.
  */
 //////////////////////////////////////////////////////////////////////////////
-geoModule.floodLayerSource = function() {
+geoModule.floodLayerSource = function(bbox) {
   'use strict';
 
   if (!(this instanceof geoModule.floodLayerSource) ) {
-    return new geoModule.floodLayerSource();
+    return new geoModule.floodLayerSource(bbox);
   }
   geoModule.layerSource.call(this, 'dummy_id', 'flood', 'the path to nowhere');
 
   var m_time = -1,
+      m_bbox = bbox,
       m_resultCache = null,
       m_featureLayer = null;
 
@@ -121,8 +122,8 @@ geoModule.floodLayerSource = function() {
       type: 'POST',
       url: '/services/floodmap',
       data: {
-        bbox: null,
-        rise: null
+        bbox: JSON.stringify(m_bbox),
+        rise: 20
       },
       dataType: 'json',
       success: function(response) {
