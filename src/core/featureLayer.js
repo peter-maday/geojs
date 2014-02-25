@@ -242,6 +242,9 @@ geoModule.featureLayer = function(options, feature) {
       switch(data[i].type()) {
         case vglModule.data.geometry:
           geomFeature = geoModule.geometryFeature(data[i]);
+
+
+
           geomFeature.material().setBinNumber(this.binNumber());
           geomFeature.setLookupTable(lut);
           m_newFeatures.push(geomFeature);
