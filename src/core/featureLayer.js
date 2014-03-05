@@ -242,9 +242,7 @@ geoModule.featureLayer = function(options, feature) {
       switch(data[i].type()) {
         case vglModule.data.geometry:
           geomFeature = geoModule.geometryFeature(data[i]);
-
-
-
+          geoModule.geoTransform.osmTransformFeature(this.container().options().gcs, geomFeature);
           geomFeature.material().setBinNumber(this.binNumber());
           geomFeature.setLookupTable(lut);
           m_newFeatures.push(geomFeature);
