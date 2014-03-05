@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////////////////////////////
 /**
- * @module ogs.geo
+ * @module geo
  */
 
 /*jslint devel: true, forin: true, newcap: true, plusplus: true, */
 /*jslint white: true, indent: 2, continue:true*/
 
-/*global geoModule, ogs, inherit, $, HTMLCanvasElement, Image*/
-/*global vglModule, document, gl, vec3*/
+/*global geo, ogs, inherit, $, HTMLCanvasElement, Image*/
+/*global vgl, document, gl, vec3*/
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
@@ -18,15 +18,15 @@
  * @dec Layer to draw points, lines, and polygons on the map The polydata layer
  *      provide mechanisms to create and draw geometrical shapes such as points,
  *      lines, and polygons.
- * @returns {geoModule.featureLayer}
+ * @returns {geo.featureLayer}
  */
 //////////////////////////////////////////////////////////////////////////////
-geoModule.featureLayer = function(options, feature) {
+geo.featureLayer = function(options, feature) {
   "use strict";
-  if (!(this instanceof geoModule.featureLayer)) {
-    return new geoModule.featureLayer(options, feature);
+  if (!(this instanceof geo.featureLayer)) {
+    return new geo.featureLayer(options, feature);
   }
-  geoModule.layer.call(this, options);
+  geo.layer.call(this, options);
 
   /** @private */
   var m_that = this,
@@ -34,9 +34,11 @@ geoModule.featureLayer = function(options, feature) {
       m_features = [],
       m_newFeatures = [],
       m_expiredFeatures = [],
-      m_predrawTime = ogs.vgl.timestamp(),
-      m_updateTime = ogs.vgl.timestamp(),
+      m_predrawTime = vgl.timestamp(),
+      m_updateTime = vgl.timestamp(),
       m_legend = null,
+      m_usePointSprites = false,
+      m_usePointSpritesImage = null,
       m_invalidData = true,
       m_visible = true,
       m_request;
@@ -57,6 +59,48 @@ geoModule.featureLayer = function(options, feature) {
   ////////////////////////////////////////////////////////////////////////////
   this.time = function() {
      return m_time;
+  };
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Return if using point sprites for rendering points
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.isUsingPointSprites = function() {
+    return m_usePointSprites;
+  };
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Set use point sprites for geometries that only has points
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.setUsePointSprites = function(val) {
+    if (val !== m_usePointSprites) {
+      m_usePointSprites = val;
+      this.modified();
+    }
+  };
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Return image for the point sprites
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.pointSpritesImage = function() {
+    return m_usePointSpritesImage;
+  };
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Set use point sprites for geometries that only has points
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.setPointSpritesImage = function(psimage) {
+    if (psimage !== m_usePointSpritesImage) {
+      m_usePointSpritesImage = psimage;
+      this.modified();
+    }
   };
 
   ////////////////////////////////////////////////////////////////////////////
@@ -149,11 +193,11 @@ geoModule.featureLayer = function(options, feature) {
 
       // Create new lookup table if none exist
       if (!lut) {
-        lut = vglModule.lookupTable(varnames[0]);
+        lut = vgl.lookupTable(varnames[0]);
         this.setLookupTable(lut);
       }
       lut.setRange(this.dataSource().getScalarRange(varnames[0]));
-      m_legend = vglModule.utils.createColorLegend(
+      m_legend = vgl.utils.createColorLegend(
         varnames[0], lut, this.legendOrigin(), this.legendWidth(),
         this.legendHeight(), 10, 0);
     }
@@ -211,6 +255,12 @@ geoModule.featureLayer = function(options, feature) {
     }
 
     if (m_legend && m_legend.length > 0) {
+
+      // Set the visibility based on the layer
+      $.each(m_legend, function(i, feature) {
+        feature.setVisible(m_that.visible());
+      });
+
       m_newFeatures = m_newFeatures.concat(m_legend);
       m_features = m_features.concat(m_legend);
     }
@@ -285,12 +335,13 @@ geoModule.featureLayer = function(options, feature) {
     // Cache the request so we can use it in add data
     m_request = request;
 
-    var i = 0,
+    var i = 0, j = 0,
         time = request.time(),
         data = null,
         varnames = null,
         geomFeature = null,
-        lut = this.lookupTable();
+        lut = this.lookupTable(),
+        noOfPrimitives = 0;
 
     m_invalidData = true;
     if (!time) {
@@ -323,13 +374,24 @@ geoModule.featureLayer = function(options, feature) {
 
     for(i = 0; i < data.length; ++i) {
       switch(data[i].type()) {
-        case vglModule.data.geometry:
-          geomFeature = geoModule.geometryFeature(data[i]);
-          geomFeature.material().setBinNumber(this.binNumber());
-          geomFeature.setLookupTable(lut);
+        case vgl.data.geometry:
+            geomFeature = geo.geometryFeature(data[i]);
+            geomFeature.setVisible(this.visible());
+            geomFeature.material().setBinNumber(this.binNumber());
+            geomFeature.setLookupTable(lut);
+          // Check if geometry has points only
+          // TODO this code could be moved to vgl
+          noOfPrimitives = geom.numberOfPrimitives();
+          if (m_usePointSprites && noOfPrimitives === 1 &&
+              geom.source(j).primitiveType() === gl.POINTS) {
+             geomFeature.setMaterial(vgl.utils.createPointSpritesMaterial(
+              m_usePointSpritesImage));
+          } else {
+
+          }
           m_newFeatures.push(geomFeature);
           break;
-        case vglModule.data.raster:
+        case vgl.data.raster:
           break;
         default:
           console.log('[warning] Data type not handled', data.type());
@@ -387,17 +449,17 @@ geoModule.featureLayer = function(options, feature) {
             break;
           }
         }
+      }
 
-        if (skipFeature) {
-          continue;
-        }
+      if (skipFeature) {
+        continue;
+      }
 
-        mat = m_features[i].material();
-        opacityUniform = mat.shaderProgram().uniform('opacity');
-        if (opacityUniform !== null) {
-          opacityUniform.set(opacity);
-          $(m_that).trigger(geoModule.command.updateLayerOpacityEvent);
-        }
+      mat = m_features[i].material();
+      opacityUniform = mat.shaderProgram().uniform('opacity');
+      if (opacityUniform !== null) {
+        opacityUniform.set(opacity);
+        $(m_that).trigger(geo.command.updateLayerOpacityEvent);
       }
     }
   };
@@ -452,7 +514,7 @@ geoModule.featureLayer = function(options, feature) {
    */
     ////////////////////////////////////////////////////////////////////////////
   this.queryLocation = function (location) {
-    var attrScalar = vglModule.vertexAttributeKeys.Scalar,
+    var attrScalar = vgl.vertexAttributeKeys.Scalar,
       features = this.features(),
       mapper, geomData, p, prim, idx, indices, ia, ib, ic, va, vb, vc,
       point, isLeftTurn, triArea, totalArea, alpha, beta, gamma, sa,
@@ -531,7 +593,7 @@ geoModule.featureLayer = function(options, feature) {
                   "value": alpha * sa + beta * sb + gamma * sc
                 }
               };
-              revent = $.Event(geoModule.command.queryResultEvent);
+              revent = $.Event(geo.command.queryResultEvent);
               revent.location = location;
               revent.srcEvent = location.event;
               $(this).trigger(revent, result);
@@ -547,7 +609,10 @@ geoModule.featureLayer = function(options, feature) {
     }
   };
 
+  // Update the opacity of the layer
+  this.setOpacity(this.opacity());
+
   return this;
 };
 
-inherit(geoModule.featureLayer, geoModule.layer);
+inherit(geo.featureLayer, geo.layer);

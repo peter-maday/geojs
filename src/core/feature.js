@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////////////////////////////
 /**
- * @module ogs.geo
+ * @module geo
  */
 
 /*jslint devel: true, forin: true, newcap: true, plusplus: true*/
 /*jslint white: true, indent: 2*/
 
-/*global geoModule, ogs, inherit, $, HTMLCanvasElement, Image*/
-/*global vglModule, document*/
+/*global geo, ogs, inherit, $, HTMLCanvasElement, Image*/
+/*global vgl, document*/
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
@@ -15,15 +15,15 @@
  * Create a new instance of class feature
  *
  * @class
- * @returns {geoModule.feature}
+ * @returns {geo.feature}
  */
 //////////////////////////////////////////////////////////////////////////////
-geoModule.feature = function() {
+geo.feature = function() {
   "use strict";
-  if (!(this instanceof geoModule.feature)) {
-    return new geoModule.feature();
+  if (!(this instanceof geo.feature)) {
+    return new geo.feature();
   }
-  vglModule.actor.call(this);
+  vgl.actor.call(this);
 
   /**
    * @private
@@ -74,33 +74,33 @@ geoModule.feature = function() {
       return;
     }
 
-    vglModule.utils.updateColorMappedMaterial(this.material(), m_lookupTable);
+    vgl.utils.updateColorMappedMaterial(this.material(), m_lookupTable);
   };
 
   return this;
 };
 
-inherit(geoModule.feature, vglModule.actor);
+inherit(geo.feature, vgl.actor);
 
 //////////////////////////////////////////////////////////////////////////////
 /**
  * Create a new instance of planeFeature
  *
  * @class
- * Create a plane feature given a lower left corner point {ogs.geo.latlng}
- * and and upper right corner point {ogs.geo.latlng}
+ * Create a plane feature given a lower left corner point {geo.latlng}
+ * and and upper right corner point {geo.latlng}
  * @param lowerleft
  * @param upperright
- * @returns {geoModule.planeFeature}
+ * @returns {geo.planeFeature}
  */
 //////////////////////////////////////////////////////////////////////////////
-geoModule.planeFeature = function(lowerleft, upperright, z) {
+geo.planeFeature = function(lowerleft, upperright, z) {
   "use strict";
-  if (!(this instanceof geoModule.planeFeature)) {
-    return new geoModule.planeFeature(lowerleft, upperright);
+  if (!(this instanceof geo.planeFeature)) {
+    return new geo.planeFeature(lowerleft, upperright);
   }
 
-  geoModule.feature.call(this);
+  geo.feature.call(this);
 
   z = typeof z !== 'undefined' ? z : 0.0;
 
@@ -110,9 +110,9 @@ geoModule.planeFeature = function(lowerleft, upperright, z) {
   pt2 = [ lowerleft.lng(), upperright.lat(), z ];
   pt1 = [ upperright.lng(), lowerleft.lat(), z ];
 
-  actor = vglModule.utils.createPlane(origin[0], origin[1], origin[2],
-                                        pt1[0], pt1[1], pt1[2], pt2[0], pt2[1],
-                                        pt2[2]);
+  actor = vgl.utils.createPlane(origin[0], origin[1], origin[2],
+                                      pt1[0], pt1[1], pt1[2], pt2[0], pt2[1],
+                                      pt2[2]);
 
 
 
@@ -133,7 +133,7 @@ geoModule.planeFeature = function(lowerleft, upperright, z) {
   return this;
 };
 
-inherit(geoModule.planeFeature, geoModule.feature);
+inherit(geo.planeFeature, geo.feature);
 
 //////////////////////////////////////////////////////////////////////////////
 /**
@@ -142,26 +142,25 @@ inherit(geoModule.planeFeature, geoModule.feature);
  * @class
  * @param positions
  * @param colors
- * @returns {geoModule.pointFeature}
+ * @returns {geo.pointFeature}
  */
 //////////////////////////////////////////////////////////////////////////////
-geoModule.pointFeature = function(positions, colors) {
+geo.pointFeature = function(positions, colors) {
   "use strict";
-  if (!(this instanceof geoModule.pointFeature)) {
-    return new geoModule.pointFeature(positions, colors);
+  if (!(this instanceof geo.pointFeature)) {
+    return new geo.pointFeature(positions, colors);
   }
-
-  vglModule.actor.call(this);
+  geo.feature.call(this);
 
   // Initialize
-  var actor = vglModule.utils.createPoints(positions, colors);
+  var actor = vgl.utils.createPoints(positions, colors);
   this.setMapper(actor.mapper());
   this.setMaterial(actor.material());
 
   return this;
 };
 
-inherit(geoModule.pointFeature, geoModule.feature);
+inherit(geo.pointFeature, geo.feature);
 
 //////////////////////////////////////////////////////////////////////////////
 /**
@@ -170,49 +169,49 @@ inherit(geoModule.pointFeature, geoModule.feature);
  * @class
  * @param positions
  * @param colors
- * @returns {geoModule.pointFeature}
+ * @returns {geo.pointFeature}
  */
 //////////////////////////////////////////////////////////////////////////////
-geoModule.pointSpritesFeature = function(image, positions, colors) {
+geo.pointSpritesFeature = function(image, positions, colors) {
   "use strict";
-  if (!(this instanceof geoModule.pointSpritesFeature)) {
-    return new geoModule.pointSpritesFeature(image, positions, colors);
+  if (!(this instanceof geo.pointSpritesFeature)) {
+    return new geo.pointSpritesFeature(image, positions, colors);
   }
 
-  vglModule.actor.call(this);
+  geo.feature.call(this);
 
   // Initialize
-  var actor = vglModule.utils.createPointSprites(image, positions, colors);
+  var actor = vgl.utils.createPointSprites(image, positions, colors);
   this.setMapper(actor.mapper());
   this.setMaterial(actor.material());
 
   return this;
 };
 
-inherit(geoModule.pointSpritesFeature, geoModule.feature);
+inherit(geo.pointSpritesFeature, geo.feature);
 
 //////////////////////////////////////////////////////////////////////////////
 /**
  * Create a new instance of geometryFeature
  *
  * @class
- * Create a geometry feature given a geometry {vglModule.geometryData} *
- * @param geometry data {vglModule.geometryData} *
- * @returns {geoModule.geometryFeature}
+ * Create a geometry feature given a geometry {vgl.geometryData} *
+ * @param geometry data {vgl.geometryData} *
+ * @returns {geo.geometryFeature}
  */
 //////////////////////////////////////////////////////////////////////////////
-geoModule.geometryFeature = function(geom) {
+geo.geometryFeature = function(geom) {
   "use strict";
-  if (!(this instanceof geoModule.geometryFeature)) {
-    return new geoModule.geometryFeature(geom);
+  if (!(this instanceof geo.geometryFeature)) {
+    return new geo.geometryFeature(geom);
   }
-  geoModule.feature.call(this);
+  geo.feature.call(this);
 
   // Initialize
-  var mapper = vglModule.mapper(),
+  var mapper = vgl.mapper(),
       material = null,
-      scalar = geom.sourceData(vglModule.vertexAttributeKeys.Scalar),
-      colors = geom.sourceData(vglModule.vertexAttributeKeys.Color),
+      scalar = geom.sourceData(vgl.vertexAttributeKeys.Scalar),
+      colors = geom.sourceData(vgl.vertexAttributeKeys.Color),
       lut = this.lookupTable();
 
   mapper.setGeometryData(geom);
@@ -221,16 +220,16 @@ geoModule.geometryFeature = function(geom) {
   if (scalar) {
     if (lut) {
       lut.updateRange(scalar.scalarRange());
-      material = vglModule.utils.createColorMappedMaterial(lut);
+      material = vgl.utils.createColorMappedMaterial(lut);
     } else {
-      lut = vglModule.lookupTable();
+      lut = vgl.lookupTable();
       lut.updateRange(scalar.scalarRange());
-      material = vglModule.utils.createColorMappedMaterial(lut);
+      material = vgl.utils.createColorMappedMaterial(lut);
     }
   } else if (colors) {
-    material = vglModule.utils.createColorMaterial();
+    material = vgl.utils.createColorMaterial();
   } else {
-    material = vglModule.utils.createSolidColorMaterial();
+    material = vgl.utils.createSolidColorMaterial();
   }
   this.setMaterial(material);
   this.setLookupTable(lut);
@@ -238,27 +237,27 @@ geoModule.geometryFeature = function(geom) {
   return this;
 };
 
-inherit(geoModule.geometryFeature, geoModule.feature);
+inherit(geo.geometryFeature, geo.feature);
 
 //////////////////////////////////////////////////////////////////////////////
 /**
  * Create a new instance of compositeGeometryFeature
  *
  * @class
- * Create a multi geometry feature given a array of geometry data {vglModule.geometryData} *
+ * Create a multi geometry feature given a array of geometry data {vgl.geometryData} *
  * @param {Array}
- * @returns {geoModule.compositeGeometryFeature}
+ * @returns {geo.compositeGeometryFeature}
  */
 //////////////////////////////////////////////////////////////////////////////
-geoModule.compositeGeometryFeature = function(geoms, color) {
+geo.compositeGeometryFeature = function(geoms, color) {
   "use strict";
-  if (!(this instanceof geoModule.compositeGeometryFeature)) {
-    return new geoModule.compositeGeometryFeature(geoms, color);
+  if (!(this instanceof geo.compositeGeometryFeature)) {
+    return new geo.compositeGeometryFeature(geoms, color);
   }
-  geoModule.feature.call(this);
+  geo.feature.call(this);
 
   var m_that = this,
-      m_mapper = vglModule.groupMapper(),
+      m_mapper = vgl.groupMapper(),
       m_material = null,
       m_gcs = "EPSG:4326";
 
@@ -278,10 +277,10 @@ geoModule.compositeGeometryFeature = function(geoms, color) {
     if (geoms) {
       count  = geoms.length;
       for (i = 0; i < count; ++i) {
-        scalar = geoms[i].sourceData(vglModule.vertexAttributeKeys.Scalar);
+        scalar = geoms[i].sourceData(vgl.vertexAttributeKeys.Scalar);
         if (scalar) {
           if (!lut) {
-            lut = vglModule.lookupTable();
+            lut = vgl.lookupTable();
             m_that.setLookupTable(lut);
           }
           hasScalars = true;
@@ -291,9 +290,9 @@ geoModule.compositeGeometryFeature = function(geoms, color) {
     }
 
     if (hasScalars) {
-      m_material = vglModule.utils.createColorMappedMaterial(lut);
+      m_material = vgl.utils.createColorMappedMaterial(lut);
     } else {
-      m_material = vglModule.utils.createGeometryMaterial();
+      m_material = vgl.utils.createGeometryMaterial();
     }
     m_that.setMaterial(m_material);
   }
@@ -324,11 +323,11 @@ geoModule.compositeGeometryFeature = function(geoms, color) {
   if (!color) {
     updateMaterial(geoms);
   } else {
-    m_material = vglModule.utils.createSolidColorMaterial(color);
+    m_material = vgl.utils.createSolidColorMaterial(color);
   }
   this.setMaterial(m_material);
 
   return this;
 };
 
-inherit(geoModule.compositeGeometryFeature, geoModule.feature);
+inherit(geo.compositeGeometryFeature, geo.feature);
