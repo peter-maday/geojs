@@ -97,7 +97,7 @@ geoModule.floodLayerSource = function(bbox) {
           }
 
           if (response.result.hasMore) {
-            setTimeout(function() {getPoints(id)}, 200);
+            getPoints(id);
           }
         }
       }, 'json');
