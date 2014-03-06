@@ -277,87 +277,19 @@ geo.featureLayer = function(options, feature) {
     }
   };
 
-  this.addData = function(data) {
+  this.addData = function(data, append) {
+    append = typeof append !== 'undefined' ? append : false;
 
-    var geomFeature = null,
-        i = 0,
+    var i = 0,
+        geomFeature = null,
+        noOfPrimitives = 0,
         lut = this.lookupTable();
 
-    m_newFeatures.length = 0;
-
-    // Create legend if not created earlier
-    this.updateLegend(false);
-
-    for(i = 0; i < data.length; ++i) {
-      switch(data[i].type()) {
-        case vglModule.data.geometry:
-          geomFeature = geoModule.geometryFeature(data[i]);
-          geoModule.geoTransform.osmTransformFeature(this.container().options().gcs, geomFeature);
-          geomFeature.material().setBinNumber(this.binNumber());
-          geomFeature.setLookupTable(lut);
-          m_newFeatures.push(geomFeature);
-          break;
-        case vglModule.data.raster:
-          break;
-        default:
-          console.log('[warning] Data type not handled', data.type());
-      }
-    }
-
-    m_features = m_features.concat(m_newFeatures.slice(0));
-
-    if (data.length > 0) {
-      m_updateTime. modified();
-      this.setOpacity(this.opacity());
-    }
-
-    // Trigger a redraw
-    if (m_request)
-      m_request.requestRedraw();
-  };
-
-  ////////////////////////////////////////////////////////////////////////////
-  /**
-   * Update layer to a particular time
-   */
-  ////////////////////////////////////////////////////////////////////////////
-  this.update = function(request) {
-    if (!this.dataSource()) {
-      console.log('[info] No valid data source found.');
-      return;
-    }
-
-    if (!request) {
-      console.log('[info] Invalid request.');
-      return;
-    }
-
-    // Cache the request so we can use it in add data
-    m_request = request;
-
-    var i = 0, j = 0,
-        time = request.time(),
-        data = null,
-        varnames = null,
-        geomFeature = null,
-        lut = this.lookupTable(),
-        noOfPrimitives = 0;
-
-    m_invalidData = true;
-    if (!time) {
-      console.log('[info] Timestamp not provided. ' +
-        'Using time from previous update.');
-      // Use previous time
-      time = m_time;
-    } else {
-      m_time = time;
-    }
-
-    data = this.dataSource().getData(time);
     if ((data && data.length < 1) || !data) {
       this.deleteLegend();
       return;
     }
+
     m_invalidData = false;
 
     // Clear our existing features
@@ -398,12 +330,52 @@ geo.featureLayer = function(options, feature) {
       }
     }
 
-    m_features = m_newFeatures.slice(0);
+    if (append)
+      m_features = m_features.concat(m_newFeatures.slice(0));
+    else
+      m_features = m_newFeatures.slice(0);
 
     if (data.length > 0) {
       m_updateTime. modified();
       this.setOpacity(this.opacity());
     }
+  };
+
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Update layer to a particular time
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.update = function(request) {
+    if (!this.dataSource()) {
+      console.log('[info] No valid data source found.');
+      return;
+    }
+
+    if (!request) {
+      console.log('[info] Invalid request.');
+      return;
+    }
+
+    // Cache the request so we can use it in add data
+    m_request = request;
+
+    var time = request.time(),
+        data = null;
+
+    m_invalidData = true;
+    if (!time) {
+      console.log('[info] Timestamp not provided. ' +
+        'Using time from previous update.');
+      // Use previous time
+      time = m_time;
+    } else {
+      m_time = time;
+    }
+
+    data = this.dataSource().getData(time);
+    this.addData(data);
   };
 
   ////////////////////////////////////////////////////////////////////////////
@@ -607,6 +579,12 @@ geo.featureLayer = function(options, feature) {
 //        }
       }
     }
+  };
+
+  // THIS IS A HORRIBLE HACK!!!!!
+  this.redraw = function() {
+    if (m_request)
+      m_request.requestRedraw();
   };
 
   // Update the opacity of the layer

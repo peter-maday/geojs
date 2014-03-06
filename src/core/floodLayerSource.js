@@ -6,8 +6,8 @@
 /*jslint devel: true, forin: true, newcap: true, plusplus: true*/
 /*jslint white: true, indent: 2*/
 
-/*global geoModule, ogs, inherit, $, HTMLCanvasElement, Image*/
-/*global vglModule, jQuery, document*/
+/*global geo, ogs, inherit, $, HTMLCanvasElement, Image*/
+/*global vgl, jQuery, document*/
 //////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
@@ -22,13 +22,13 @@
  * can be provided with the appropriate error message.
  */
 //////////////////////////////////////////////////////////////////////////////
-geoModule.floodLayerSource = function(bbox) {
+geo.floodLayerSource = function(bbox) {
   'use strict';
 
-  if (!(this instanceof geoModule.floodLayerSource) ) {
-    return new geoModule.floodLayerSource(bbox);
+  if (!(this instanceof geo.floodLayerSource) ) {
+    return new geo.floodLayerSource(bbox);
   }
-  geoModule.layerSource.call(this, 'dummy_id', 'flood', 'the path to nowhere');
+  geo.layerSource.call(this, 'dummy_id', 'flood', 'the path to nowhere');
 
   var m_time = -1,
       m_bbox = bbox,
@@ -91,7 +91,7 @@ geoModule.floodLayerSource = function(bbox) {
           console.log("Starting to read GeoJSON")
 
           if (response.result.geoJson) {
-            reader = vglModule.geojsonReader();
+            reader = vgl.geojsonReader();
             geoJson = reader.readGJObject(response.result.geoJson);
             m_featureLayer.addData(geoJson);
           }
@@ -166,4 +166,4 @@ geoModule.floodLayerSource = function(bbox) {
   return this;
 };
 
-inherit(geoModule.floodLayerSource, geoModule.layerSource);
+inherit(geo.floodLayerSource, geo.layerSource);
