@@ -309,6 +309,7 @@ geo.featureLayer = function(options, feature) {
       switch(data[i].type()) {
         case vgl.data.geometry:
             geomFeature = geo.geometryFeature(data[i]);
+            geo.geoTransform.osmTransformFeature(this.container().options().gcs, geomFeature);
             geomFeature.setVisible(this.visible());
             geomFeature.material().setBinNumber(this.binNumber());
           // Check if geometry has points only
