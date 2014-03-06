@@ -292,10 +292,12 @@ geo.featureLayer = function(options, feature) {
     m_invalidData = false;
 
     // Clear our existing features
-    if (m_expiredFeatures.length > 0) {
-      m_expiredFeatures = m_expiredFeatures.concat(m_newFeatures);
-    } else {
-      m_expiredFeatures = m_newFeatures.slice(0);
+    if (!append) {
+      if (m_expiredFeatures.length > 0) {
+        m_expiredFeatures = m_expiredFeatures.concat(m_newFeatures);
+      } else {
+        m_expiredFeatures = m_newFeatures.slice(0);
+      }
     }
 
     m_newFeatures.length = 0;
