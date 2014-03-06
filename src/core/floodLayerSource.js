@@ -93,7 +93,8 @@ geo.floodLayerSource = function(bbox) {
           if (response.result.geoJson) {
             reader = vgl.geojsonReader();
             geoJson = reader.readGJObject(response.result.geoJson);
-            m_featureLayer.addData(geoJson);
+            m_featureLayer.addData(geoJson, true);
+
           }
 
           if (response.result.hasMore) {

@@ -282,8 +282,7 @@ geo.featureLayer = function(options, feature) {
 
     var i = 0,
         geomFeature = null,
-        noOfPrimitives = 0,
-        lut = this.lookupTable();
+        noOfPrimitives = 0;
 
     if ((data && data.length < 1) || !data) {
       this.deleteLegend();
@@ -310,7 +309,6 @@ geo.featureLayer = function(options, feature) {
             geomFeature = geo.geometryFeature(data[i]);
             geomFeature.setVisible(this.visible());
             geomFeature.material().setBinNumber(this.binNumber());
-            geomFeature.setLookupTable(lut);
           // Check if geometry has points only
           // TODO this code could be moved to vgl
           noOfPrimitives = geom.numberOfPrimitives();
