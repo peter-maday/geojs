@@ -316,7 +316,7 @@ geo.featureLayer = function(options, feature) {
           // TODO this code could be moved to vgl
           noOfPrimitives = data[i].numberOfPrimitives();
           if (m_usePointSprites && noOfPrimitives === 1 &&
-              data[i].source(j).primitiveType() === gl.POINTS) {
+              data[i].primitive(0).primitiveType() === gl.POINTS) {
              geomFeature.setMaterial(vgl.utils.createPointSpritesMaterial(
               m_pointSpritesImage));
           } else {
