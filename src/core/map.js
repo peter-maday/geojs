@@ -444,6 +444,8 @@ geo.map = function(node, options) {
       updateLegends($(m_node).width(), $(m_node).height());
       this.modified();
 
+      layer.container(this);
+
       $(layer).on(geo.command.queryResultEvent, function(event, queryResult) {
         $(m_that).trigger(event, queryResult);
         return true;
@@ -453,8 +455,6 @@ geo.map = function(node, options) {
         type: geo.command.addLayerEvent,
         layer: layer
       });
-
-      layer.container(this);
 
       return true;
     }
@@ -644,6 +644,12 @@ geo.map = function(node, options) {
   ////////////////////////////////////////////////////////////////////////////
   this.update = function() {
     computeZoom();
+
+    var start = this.displayToMap(0, 0);
+    var end = this.displayToMap(5, 5);
+
+    console.log("x delta: " + (end.x - start.x));
+    console.log("y delta: " + (end.y - start.y));
 
     // For now update all layers. In the future, we should be
     // able to perform updates based on the layer type
