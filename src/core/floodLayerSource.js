@@ -34,7 +34,9 @@ geo.floodLayerSource = function(bbox) {
       m_bbox = bbox,
       m_resultCache = null,
       m_featureLayer = null,
-      m_dataResolution = null;
+      m_dataResolution = null,
+      m_currentQuery = null,
+      m_currentBBox = null;
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -109,17 +111,19 @@ geo.floodLayerSource = function(bbox) {
       }, 'json');
   };
 
-  var getCoursePoints = function(res, batch, clear) {
+  var getCoursePoints = function(bbox, res, batch, clear, id, pointSize) {
     var errorString,
         pointUrl = '/services/floodmap',
         reader, geoJson;
 
-    batch = typeof batch !== 'undefined' ? batch : 0
-    clear = typeof clear !== 'undefined' ? clear : false
+    batch = typeof batch !== 'undefined' ? batch : 0;
+    clear = typeof clear !== 'undefined' ? clear : false;
+    id = typeof id !== 'undefined' ? id : null;
 
     $.get(pointUrl,
           {
-            bbox: JSON.stringify(m_bbox),
+            'id': id,
+            'bbox': JSON.stringify(bbox),
             rise: 20,
             'res': res,
             'batch': batch
@@ -137,13 +141,18 @@ geo.floodLayerSource = function(bbox) {
             reader = vgl.geojsonReader();
             geoJson = reader.readGJObject(response.result.geoJson);
 
-            m_featureLayer.addData(geoJson, !clear);
+            m_featureLayer.addData(geoJson, !clear, pointSize);
             m_featureLayer.redraw();
           }
 
-          if (response.result.hasMore) {
+          if (id == null) {
+            m_currentQuery = response.result.id;
+          }
+
+          if (response.result.id === m_currentQuery && response.result.hasMore) {
             // TODO This should using setTimeout to prevent stackoverflow
-            getCoursePoints(response.result.res, response.result.batch);
+            getCoursePoints(bbox, response.result.res, response.result.batch,
+                            false, response.result.id, pointSize);
           }
         }
       }, 'json');
@@ -176,6 +185,66 @@ geo.floodLayerSource = function(bbox) {
     return res
   };
 
+
+var Rectangle = function (x0, y0, x1, y1) {
+  var m_ll = [x0, y0],
+      m_tr = [x1, y1];
+
+  this.lowerLeft = function() {
+    return m_ll;
+  };
+
+  this.upperRight = function() {
+    return m_tr;
+  };
+
+  this.getBoundingBox = function() {
+    return [this.lowerLeft(), [this.lowerLeft()[0], this.upperRight()[1]],
+            this.upperRight(), [this.upperRight()[0], this.lowerLeft()[1]],
+            this.lowerLeft()]
+  };
+}
+
+Rectangle.equal = function(a, b) {
+  var equal = function(l1, l2) {
+    return  l1[0] === l2[0] && l1[1] === l2[1];
+  };
+
+  return equal(a.lowerLeft(), b.lowerLeft()) && equal(a.upperRight, b.upperRight());
+}
+
+// [[x1, y1], [x2, y2]]
+var intersection = function(a, b) {
+
+    var aLeft, bLeft, aRight, bRight, aTop, bTop, aBottom, bBottom;
+
+    aLeft = a[0][0];
+    bLeft = b[0][0];
+
+    aRight = a[1][0];
+    bRight = b[1][0];
+
+    aTop = a[1][1];
+    bTop = b[1][1];
+
+    aBottom = a[0][1];
+    bBottom= b[0][1];
+
+    var x0 = Math.max(aLeft, bLeft);
+    var x1 = Math.min(aRight, bRight);
+
+    if (x0 <= x1) {
+      var y0 = Math.max(aBottom, bBottom);
+      var y1 = Math.min(aTop, bTop);
+
+      if (y0 <= y1) {
+        return new Rectangle(x0, y0, x1, y1);
+      }
+    }
+
+    return null;
+  };
+
   ////////////////////////////////////////////////////////////////////////////
   /**
    * Return raw data
@@ -183,20 +252,42 @@ geo.floodLayerSource = function(bbox) {
   ////////////////////////////////////////////////////////////////////////////
   this.getData = function(time) {
 
-    console.log("Checking zoom level")
-
-    var start, end, delta, res;
+    var start, end, delta, res, clippedBBox, pointSpriteSize;
 
     start = this.featureLayer().container().displayToMap(0, 0);
     end = this.featureLayer().container().displayToMap(5, 5);
     delta = end.x - start.x;
     res = selectResolution(delta);
 
+    // Clip bounding box based on view extent
+    start = this.featureLayer().container().displayToMap(0, $('#glcanvas').height())
+    end = this.featureLayer().container().displayToMap($('#glcanvas').width(), 0);
+
+    clippedBBox = intersection([[start.x, start.y], [end.x, end.y]],
+                                [[m_bbox[0][0], m_bbox[0][1]], [m_bbox[2][0], m_bbox[2][1]]]);
+
+    if (clippedBBox == null)
+      clippedBBox = m_bbox;
+
+    // Calculate point sprite size
+
+    console.log("res: " + res);
+    console.log("delta: " + delta);
+
+    pointSpriteSize = 1.1 * (res/delta)*5;
+    console.log("spriteSize: " + pointSpriteSize);
+
+
+    this.featureLayer().setPointSpriteSize(pointSpriteSize);
+
     // If data resolution hasn't changed then just return
     if (m_dataResolution === res)
       return
 
-    m_dataResolution = res
+    m_currentBBox = clippedBBox;
+    m_dataResolution = res;
+
+    clippedBBox = clippedBBox.getBoundingBox();
 //
 //    if (m_time === time) {
 //      console.log('[info] No new data as timestamp has not changed.');
@@ -206,7 +297,8 @@ geo.floodLayerSource = function(bbox) {
 
     var errorString = null;
 
-    getCoursePoints(m_dataResolution, 0, true);
+    // TODO can we remove the size from this function
+    getCoursePoints(clippedBBox, m_dataResolution, 0, true, null, pointSpriteSize);
     return;
 
     $.ajax({

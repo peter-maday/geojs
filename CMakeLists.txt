@@ -38,6 +38,7 @@ set(_source_files
   core/layerSource.js
   core/archiveLayerSource.js
   core/floodLayerSource.js
+  core/floodLayer.js
   core/command.js
   core/updateRequest.js
   core/prepareForRenderRequest.js

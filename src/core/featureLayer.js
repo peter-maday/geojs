@@ -337,7 +337,7 @@ geo.featureLayer = function(options, feature) {
       m_features = m_newFeatures.slice(0);
 
     if (data.length > 0) {
-      m_updateTime. modified();
+      m_updateTime.modified();
       this.setOpacity(this.opacity());
     }
   };

@@ -81,3 +81,21 @@ Object.size = function(obj) {
   }
   return size;
 };
+
+function createSuper(that) {
+  var parent = {}
+
+  for (m in that) {
+    if (that.hasOwnProperty(m))
+      parent[m] = that[m];
+  }
+
+  return parent;
+}
+
+function callSuper(parent, that) {
+
+   parent.apply(that, Array.prototype.slice.call(arguments, 2));
+
+  return createSuper(that);
+}
