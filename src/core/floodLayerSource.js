@@ -120,6 +120,10 @@ geo.floodLayerSource = function(bbox) {
     clear = clear !== undefined ? clear : false;
     id = id !== undefined ? id : null;
 
+    //  Reset current query id to prevent stale data being added to view
+    if (id == null)
+      m_currentQuery = null
+
     $.get(pointUrl,
           {
             'id': id,
