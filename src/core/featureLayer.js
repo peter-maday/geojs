@@ -294,9 +294,9 @@ geo.featureLayer = function(options, feature) {
     // Clear our existing features
     if (!append) {
       if (m_expiredFeatures.length > 0) {
-        m_expiredFeatures = m_expiredFeatures.concat(m_newFeatures);
+        m_expiredFeatures = m_expiredFeatures.concat(m_features);
       } else {
-        m_expiredFeatures = m_newFeatures.slice(0);
+        m_expiredFeatures = m_features.slice(0);
       }
     }
 
