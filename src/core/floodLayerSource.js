@@ -209,9 +209,7 @@ var Rectangle = function (x0, y0, x1, y1) {
   };
 
   this.getBoundingBox = function() {
-    return [this.lowerLeft(), [this.lowerLeft()[0], this.upperRight()[1]],
-            this.upperRight(), [this.upperRight()[0], this.lowerLeft()[1]],
-            this.lowerLeft()]
+    return [this.lowerLeft(), this.upperRight()]
   };
 }
 
@@ -274,7 +272,7 @@ var intersection = function(a, b) {
     end = this.featureLayer().container().displayToMap($('#glcanvas').width(), 0);
 
     clippedBBox = intersection([[start.x, start.y], [end.x, end.y]],
-                                [[m_bbox[0][0], m_bbox[0][1]], [m_bbox[2][0], m_bbox[2][1]]]);
+                                [m_bbox[0], m_bbox[2]]);
 
     if (clippedBBox == null)
       clippedBBox = m_bbox;
