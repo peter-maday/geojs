@@ -18,27 +18,36 @@ geo.floodLayer = function() {
 
   /** @private */
   var m_super = callSuper(geo.featureLayer, this),
-      m_that = this;
+      m_that = this,
+      m_pointSize = 10;
 
-  this.addData = function(data, append, pointSize) {
+  this.updatePointSize = function(pointSize) {
+    var i, features = this.features();
+    for(i=0; i< features.length; i++) {
+      features[i].material().shaderProgram().uniform("pointSize").set(pointSize)
+    }
+  };
+
+  this.addData = function(data, append) {
     var i, features;
 
-    append = typeof append !== 'undefined' ? append : false;
+    append = append !== undefined ? append : false;
 
     m_super.addData.call(this, data, append);
 
     // Now set the point size
-
-    if (typeof pointSize !== 'undefined') {
-      this.setPointSpriteSize(pointSize);
-    }
+    this.updatePointSize(m_pointSize);
   };
 
-  this.setPointSpriteSize = function(pointSize) {
-    var i, features = this.features();
-    for(i=0; i< features.length; i++) {
-      features[0].material().shaderProgram().uniform("pointSize").set(pointSize)
+  this.pointSpriteSize = function(pointSize) {
+
+    if(pointSize !== undefined && pointSize != m_pointSize) {
+      m_pointSize = pointSize;
+      this.updatePointSize(pointSize);
+      return this;
     }
+
+    return m_pointSize;
   };
 };
 

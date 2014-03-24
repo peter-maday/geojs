@@ -111,14 +111,14 @@ geo.floodLayerSource = function(bbox) {
       }, 'json');
   };
 
-  var getCoursePoints = function(bbox, res, batch, clear, id, pointSize) {
+  var getCoursePoints = function(bbox, res, batch, clear, id) {
     var errorString,
         pointUrl = '/services/floodmap',
         reader, geoJson;
 
-    batch = typeof batch !== 'undefined' ? batch : 0;
-    clear = typeof clear !== 'undefined' ? clear : false;
-    id = typeof id !== 'undefined' ? id : null;
+    batch = batch !== undefined ? batch : 0;
+    clear = clear !== undefined ? clear : false;
+    id = id !== undefined ? id : null;
 
     $.get(pointUrl,
           {
@@ -135,24 +135,30 @@ geo.floodLayerSource = function(bbox) {
           console.log(errorString);
         } else {
 
-          console.log("Starting to read GeoJSON")
-
-          if (response.result.geoJson) {
-            reader = vgl.geojsonReader();
-            geoJson = reader.readGJObject(response.result.geoJson);
-
-            m_featureLayer.addData(geoJson, !clear, pointSize);
-            m_featureLayer.redraw();
-          }
 
           if (id == null) {
             m_currentQuery = response.result.id;
           }
 
-          if (response.result.id === m_currentQuery && response.result.hasMore) {
-            // TODO This should using setTimeout to prevent stackoverflow
-            getCoursePoints(bbox, response.result.res, response.result.batch,
-                            false, response.result.id, pointSize);
+          if (response.result.id === m_currentQuery) {
+            if (response.result.geoJson) {
+              console.log("Starting to read GeoJSON")
+              reader = vgl.geojsonReader();
+              geoJson = reader.readGJObject(response.result.geoJson);
+
+              m_featureLayer.addData(geoJson, !clear);
+              m_featureLayer.redraw();
+            }
+
+            if ( response.result.hasMore) {
+              setTimeout(function() {
+
+                console.log("id: " + response.result.id);
+
+                getCoursePoints(bbox, response.result.res, response.result.batch,
+                                false, response.result.id);
+              }, 1000);
+            }
           }
         }
       }, 'json');
@@ -270,15 +276,10 @@ var intersection = function(a, b) {
       clippedBBox = m_bbox;
 
     // Calculate point sprite size
-
-    console.log("res: " + res);
-    console.log("delta: " + delta);
-
-    pointSpriteSize = 1.1 * (res/delta)*5;
+    pointSpriteSize = (res/delta)*5;
     console.log("spriteSize: " + pointSpriteSize);
 
-
-    this.featureLayer().setPointSpriteSize(pointSpriteSize);
+    this.featureLayer().pointSpriteSize(pointSpriteSize);
 
     // If data resolution hasn't changed then just return
     if (m_dataResolution === res)
@@ -298,7 +299,7 @@ var intersection = function(a, b) {
     var errorString = null;
 
     // TODO can we remove the size from this function
-    getCoursePoints(clippedBBox, m_dataResolution, 0, true, null, pointSpriteSize);
+    getCoursePoints(clippedBBox, m_dataResolution, 0, true);
     return;
 
     $.ajax({
