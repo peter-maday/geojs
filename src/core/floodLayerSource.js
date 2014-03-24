@@ -168,13 +168,22 @@ geo.floodLayerSource = function(bbox) {
       }, 'json');
   };
 
-  var resolutionTable  = [
-                           {end: 0.6,      resolution: 0.1},
-                           {end: 0.06,     resolution: 0.05},
-                           {end: 0.035,    resolution: 0.025},
-                           {end: 0.0225,   resolution: 0.0125},
-                           {end: Number.MIN_VALUE, resolution: 0.008333}
-                         ];
+//  var resolutionTable  = [
+//                           {end: 0.6,      resolution: 0.1},
+//                           {end: 0.06,     resolution: 0.05},
+//                           {end: 0.035,    resolution: 0.025},
+//                           {end: 0.0225,   resolution: 0.0125},
+//                           {end: Number.MIN_VALUE, resolution: 0.008333}
+//                         ];
+    var resolutionTable  = [
+                             {end: 0.6,      resolution: 0.1},
+                             {end: 0.06,     resolution: 0.05},
+                             {end: 0.025,    resolution: 0.025},
+                             {end: 0.005,   resolution: 0.0125},
+                             {end: Number.MIN_VALUE, resolution: 0.008333}
+                           ];
+
+
 
   var selectResolution  = function(delta) {
     var i, res, start, step;
@@ -210,6 +219,17 @@ var Rectangle = function (x0, y0, x1, y1) {
 
   this.getBoundingBox = function() {
     return [this.lowerLeft(), this.upperRight()]
+  };
+
+  this.contains = function(r) {
+    var contains = true;
+
+    contains = contains && r.lowerLeft()[0] >= this.lowerLeft()[0];
+    contains = contains && r.lowerLeft()[1] >= this.lowerLeft()[1];
+    contains = contains && r.upperRight()[0] <= this.upperRight()[0];
+    contains = contains && r.upperRight()[1] <= this.upperRight()[1];
+
+    return contains
   };
 }
 
@@ -260,11 +280,12 @@ var intersection = function(a, b) {
   ////////////////////////////////////////////////////////////////////////////
   this.getData = function(time) {
 
-    var start, end, delta, res, clippedBBox, pointSpriteSize;
+    var start, end, delta, res, clippedBBox, pointSpriteSize, clear = true;
 
     start = this.featureLayer().container().displayToMap(0, 0);
     end = this.featureLayer().container().displayToMap(5, 5);
     delta = end.x - start.x;
+
     res = selectResolution(delta);
 
     // Clip bounding box based on view extent
@@ -274,8 +295,10 @@ var intersection = function(a, b) {
     clippedBBox = intersection([[start.x, start.y], [end.x, end.y]],
                                 [m_bbox[0], m_bbox[2]]);
 
-    if (clippedBBox == null)
-      clippedBBox = m_bbox;
+    if (clippedBBox == null) {
+      clippedBBox = new Rectange(m_bbox[0][0], m_bbox[0][1],
+                                 m_bbox[2][0], m_bbox[2][1]);
+    }
 
     // Calculate point sprite size
     pointSpriteSize = (res/delta)*5;
@@ -283,25 +306,22 @@ var intersection = function(a, b) {
 
     this.featureLayer().pointSpriteSize(pointSpriteSize);
 
-    // If data resolution hasn't changed then just return
-    if (m_dataResolution === res)
-      return
+    console.log("current res: " + res)
 
-    m_currentBBox = clippedBBox;
+    if (m_dataResolution === res) {
+      // If data resolution hasn't changed and we are in the currently selected
+      // bounding box then just return
+      if (m_currentBBox.contains(clippedBBox))
+        return
+      // Select using the new bounding box, appending to existing features
+      clear = false
+    }
+
     m_dataResolution = res;
+    m_currentBBox = clippedBBox;
 
-    clippedBBox = clippedBBox.getBoundingBox();
-//
-//    if (m_time === time) {
-//      console.log('[info] No new data as timestamp has not changed.');
-//      return m_resultCache;
-//    }
-//    m_time = time;
+    getCoursePoints(clippedBBox.getBoundingBox(), m_dataResolution, 0, clear);
 
-    var errorString = null;
-
-    // TODO can we remove the size from this function
-    getCoursePoints(clippedBBox, m_dataResolution, 0, true);
     return;
 
     $.ajax({
