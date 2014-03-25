@@ -36,7 +36,9 @@ geo.floodLayerSource = function(bbox) {
       m_featureLayer = null,
       m_dataResolution = null,
       m_currentQuery = null,
-      m_currentBBox = null;
+      m_currentBBox = null,
+      m_resolutionChanged = false,
+      m_that = this;
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -151,6 +153,8 @@ geo.floodLayerSource = function(bbox) {
               geoJson = reader.readGJObject(response.result.geoJson);
 
               m_featureLayer.addData(geoJson, !clear);
+              m_that.updatePointSize();
+              m_resolutionChanged = false;
               m_featureLayer.redraw();
             }
 
@@ -287,8 +291,8 @@ var intersection = function(a, b) {
                                 [m_bbox[0], m_bbox[2]]);
 
     if (clippedBBox == null) {
-      clippedBBox = new Rectange(m_bbox[0][0], m_bbox[0][1],
-                                 m_bbox[2][0], m_bbox[2][1]);
+      clippedBBox = new Rectangle(m_bbox[0][0], m_bbox[0][1],
+                                  m_bbox[2][0], m_bbox[2][1]);
     }
 
     if (m_dataResolution === res) {
@@ -303,9 +307,21 @@ var intersection = function(a, b) {
     m_dataResolution = res;
     m_currentBBox = clippedBBox;
 
-    console.log("current res: " + res)
+    m_resolutionChanged = true;
 
     getCoursePoints(clippedBBox.getBoundingBox(), m_dataResolution, 0, clear);
+  };
+
+  this.updatePointSize = function() {
+    var start, end, delta, pointSpriteSize;
+
+    start = this.featureLayer().container().displayToMap(0, 0);
+    end = this.featureLayer().container().displayToMap(5, 5);
+    delta = end.x - start.x;
+
+    // Calculate point sprite size
+    pointSpriteSize = (m_dataResolution/delta)*11;
+    this.featureLayer().pointSpriteSize(pointSpriteSize);
   };
 
   ////////////////////////////////////////////////////////////////////////////
@@ -325,14 +341,8 @@ var intersection = function(a, b) {
       this.fetchPoints();
     }
 
-    start = that.featureLayer().container().displayToMap(0, 0);
-    end = that.featureLayer().container().displayToMap(5, 5);
-    delta = end.x - start.x;
-
-    // Calculate point sprite size
-    pointSpriteSize = (m_dataResolution/delta)*11;
-    console.log("spriteSize: " + pointSpriteSize);
-    that.featureLayer().pointSpriteSize(pointSpriteSize);
+    if (!m_resolutionChanged)
+      this.updatePointSize();
 
     return;
 
