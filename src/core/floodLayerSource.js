@@ -176,11 +176,11 @@ geo.floodLayerSource = function(bbox) {
 //                           {end: Number.MIN_VALUE, resolution: 0.008333}
 //                         ];
     var resolutionTable  = [
-                             {end: 0.6,      resolution: 0.1},
-                             {end: 0.06,     resolution: 0.05},
-                             {end: 0.025,    resolution: 0.025},
-                             {end: 0.005,   resolution: 0.0125},
-                             {end: Number.MIN_VALUE, resolution: 0.008333}
+                             {end: 5,      resolution: 0.1},
+                             {end: 7,     resolution: 0.05},
+                             {end: 9,    resolution: 0.025},
+                             {end: 11,   resolution: 0.0125},
+                             {end: 13, resolution: 0.008333}
                            ];
 
 
@@ -189,12 +189,12 @@ geo.floodLayerSource = function(bbox) {
     var i, res, start, step;
 
     res = 0.1;
-    start = Number.MAX_VALUE;
+    start = Number.MIN_VALUE;
 
     for (i=0; i< resolutionTable.length; i++) {
       step = resolutionTable[i];
 
-      if (delta <= start && delta >= step.end) {
+      if (delta > start && delta <= step.end) {
         res = step.resolution;
         break;
       }
@@ -273,20 +273,11 @@ var intersection = function(a, b) {
     return null;
   };
 
-  ////////////////////////////////////////////////////////////////////////////
-  /**
-   * Return raw data
-   */
-  ////////////////////////////////////////////////////////////////////////////
-  this.getData = function(time) {
+  this.fetchPoints = function() {
+    var start, end, delta, res, clippedBBox, pointSpriteSize, clear = true,
+    zoomLevel = this.featureLayer().container().zoom();
 
-    var start, end, delta, res, clippedBBox, pointSpriteSize, clear = true;
-
-    start = this.featureLayer().container().displayToMap(0, 0);
-    end = this.featureLayer().container().displayToMap(5, 5);
-    delta = end.x - start.x;
-
-    res = selectResolution(delta);
+    res = selectResolution(zoomLevel);
 
     // Clip bounding box based on view extent
     start = this.featureLayer().container().displayToMap(0, $('#glcanvas').height())
@@ -300,27 +291,48 @@ var intersection = function(a, b) {
                                  m_bbox[2][0], m_bbox[2][1]);
     }
 
-    // Calculate point sprite size
-    pointSpriteSize = (res/delta)*5;
-    console.log("spriteSize: " + pointSpriteSize);
-
-    this.featureLayer().pointSpriteSize(pointSpriteSize);
-
-    console.log("current res: " + res)
-
     if (m_dataResolution === res) {
       // If data resolution hasn't changed and we are in the currently selected
       // bounding box then just return
       if (m_currentBBox.contains(clippedBBox))
         return
       // Select using the new bounding box, appending to existing features
-      clear = false
+      clear = true
     }
 
     m_dataResolution = res;
     m_currentBBox = clippedBBox;
 
+    console.log("current res: " + res)
+
     getCoursePoints(clippedBBox.getBoundingBox(), m_dataResolution, 0, clear);
+  };
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Return raw data
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.getData = function(time) {
+    var that = this, start, end, delta, pointSpriteSize;
+
+    // If this is our first pass then set things up
+    if (m_dataResolution == null) {
+      $(this.featureLayer().container())
+      .off(geo.command.updateViewZoomEvent)
+        .on(geo.command.updateViewZoomEvent, function() { that.fetchPoints(); });
+
+      this.fetchPoints();
+    }
+
+    start = that.featureLayer().container().displayToMap(0, 0);
+    end = that.featureLayer().container().displayToMap(5, 5);
+    delta = end.x - start.x;
+
+    // Calculate point sprite size
+    pointSpriteSize = (m_dataResolution/delta)*11;
+    console.log("spriteSize: " + pointSpriteSize);
+    that.featureLayer().pointSpriteSize(pointSpriteSize);
 
     return;
 
