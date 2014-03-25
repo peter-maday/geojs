@@ -120,49 +120,50 @@ geo.map = function(node, options) {
    */
   ////////////////////////////////////////////////////////////////////////////
   function computeZoom() {
-    var camera = m_renderer.camera();
+    var camera = m_renderer.camera(), newLevel;
 
 //    console.log('camera position is', camera.position()[2]);
 
     if (camera.position()[2] < 0.0625) {
-      m_options.zoom = 15;
+      newLevel = 15;
     }
     else if (camera.position()[2] < 0.125) {
-      m_options.zoom = 14;
+      newLevel = 14;
     }
     else if (camera.position()[2] < 0.25) {
-      m_options.zoom = 13;
+      newLevel = 13;
     }
     else if (camera.position()[2] < 0.5) {
-      m_options.zoom = 12;
+      newLevel = 12;
     }
     else if (camera.position()[2] < 1) {
-      m_options.zoom = 11;
+      newLevel = 11;
     }
     else if (camera.position()[2] < 2) {
-      m_options.zoom = 10;
+      newLevel = 10;
     }
     else if (camera.position()[2] < 4) {
-      m_options.zoom = 9;
+      newLevel = 9;
     }
     else if (camera.position()[2] < 8) {
-      m_options.zoom = 8;
+      newLevel = 8;
     }
     else if (camera.position()[2] < 16) {
-      m_options.zoom = 7;
+      newLevel = 7;
     }
     else if (camera.position()[2] < 32) {
-      m_options.zoom = 6;
+      newLevel = 6;
     }
     else if (camera.position()[2] < 64) {
-      m_options.zoom = 5;
+      newLevel = 5;
     }
     else if (camera.position()[2] < 128) {
-      m_options.zoom = 4;
+      newLevel = 4;
     }
     else if (camera.position()[2] < Number.MAX_VALUE) {
-      m_options.zoom = 3;
+      newLevel = 3;
     }
+    m_that.setZoom(newLevel);
   }
 
   ////////////////////////////////////////////////////////////////////////////
