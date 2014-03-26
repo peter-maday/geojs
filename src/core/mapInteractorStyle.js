@@ -145,7 +145,7 @@ geo.mapInteractorStyle = function() {
 
         m_camera.pan(-m_dx, -m_dy, -m_dz);
         $(m_that).trigger(geo.command.updateViewPositionEvent);
-        $(m_that).trigger(vgl.command.leftButtonPressEvent);
+        $(m_that).trigger(vgl.command.leftButtonPressEvent, [-m_dx, -m_dy]);
       }
     }
     if (m_middileMouseButtonDown) {

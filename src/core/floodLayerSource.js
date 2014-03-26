@@ -38,7 +38,8 @@ geo.floodLayerSource = function(bbox) {
       m_currentQuery = null,
       m_currentBBox = null,
       m_resolutionChanged = false,
-      m_that = this;
+      m_that = this,
+      m_panX = 0, m_panY = 0;
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -235,6 +236,14 @@ var Rectangle = function (x0, y0, x1, y1) {
 
     return contains
   };
+
+  this.width = function() {
+    return m_tr[0] - m_ll[0]
+  };
+
+  this.height = function() {
+    return m_tr[1] - m_ll[1];
+  };
 }
 
 Rectangle.equal = function(a, b) {
@@ -306,6 +315,8 @@ var intersection = function(a, b) {
 
     m_dataResolution = res;
     m_currentBBox = clippedBBox;
+    m_panX = 0;
+    m_panY = 0;
 
     m_resolutionChanged = true;
 
@@ -349,6 +360,20 @@ var intersection = function(a, b) {
       $(this.featureLayer().container())
       .off(geo.command.updateViewZoomEvent)
         .on(geo.command.updateViewZoomEvent, function() { that.fetchPoints(); });
+
+      $(this.featureLayer().container().getInteractorStyle())
+        .off(vgl.command.leftButtonPressEvent)
+          .on(vgl.command.leftButtonPressEvent, function(event, x, y) {
+                m_panX += x;
+                m_panY += y;
+                console.log(m_panX);
+
+                if (Math.abs(m_panX) >= m_currentBBox.width()/2 ||
+                    Math.abs(m_panY) >= m_currentBBox.height()/2) {
+                  that.fetchPoints();
+                }
+              });
+
 
       this.fetchPoints();
     }
