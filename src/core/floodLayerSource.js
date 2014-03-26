@@ -313,16 +313,26 @@ var intersection = function(a, b) {
   };
 
   this.updatePointSize = function() {
-    var canvasWidth, start, end, delta, pointSpriteSize;
+    var canvasWidth, canvasHeight, start, factor, end, delta, deltaX, deltaY, pointSpriteSize;
 
     canvasWidth = $('#glcanvas').width();
+    canvasHeight = $('#glcanvas').height();
 
     start = this.featureLayer().container().displayToMap(0, 0);
     end = this.featureLayer().container().displayToMap(canvasWidth, 0);
-    delta = end.x - start.x;
+
+    deltaX = Math.abs(end.x - start.x);
+
+    start = this.featureLayer().container().displayToMap(0, 0);
+    end = this.featureLayer().container().displayToMap(0, canvasHeight);
+
+    deltaY = Math.abs(end.y - start.y);
+    delta = deltaX > deltaY ? deltaY : deltaX;
+
+    factor = deltaX > deltaY ? canvasHeight : canvasWidth;
 
     // Calculate point sprite size
-    pointSpriteSize = (m_dataResolution/delta)*canvasWidth*2.2;
+    pointSpriteSize = (m_dataResolution/delta)*factor;
     this.featureLayer().pointSpriteSize(pointSpriteSize);
   };
 
