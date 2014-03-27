@@ -369,8 +369,8 @@ var intersection = function(a, b) {
                 m_panY += y;
                 console.log(m_panX);
 
-                if (Math.abs(m_panX) >= m_currentBBox.width()/2 ||
-                    Math.abs(m_panY) >= m_currentBBox.height()/2) {
+                if (Math.abs(m_panX) >= m_currentBBox.width()/4 ||
+                    Math.abs(m_panY) >= m_currentBBox.height()/4) {
                   that.fetchPoints();
                 }
               });
