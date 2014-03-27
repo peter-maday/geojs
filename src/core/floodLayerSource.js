@@ -22,15 +22,16 @@
  * can be provided with the appropriate error message.
  */
 //////////////////////////////////////////////////////////////////////////////
-geo.floodLayerSource = function(bbox) {
+geo.floodLayerSource = function(rise, bbox) {
   'use strict';
 
   if (!(this instanceof geo.floodLayerSource) ) {
-    return new geo.floodLayerSource(bbox);
+    return new geo.floodLayerSource(rise, bbox);
   }
   geo.layerSource.call(this, 'dummy_id', 'flood', 'the path to nowhere');
 
   var m_time = -1,
+      m_rise = rise,
       m_bbox = bbox,
       m_resultCache = null,
       m_featureLayer = null,
@@ -131,7 +132,7 @@ geo.floodLayerSource = function(bbox) {
           {
             'id': id,
             'bbox': JSON.stringify(bbox),
-            rise: 20,
+            rise: m_rise,
             'res': res,
             'batch': batch
           },
