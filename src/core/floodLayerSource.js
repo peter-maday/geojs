@@ -40,7 +40,8 @@ geo.floodLayerSource = function(rise, bbox) {
       m_currentBBox = null,
       m_resolutionChanged = false,
       m_that = this,
-      m_panX = 0, m_panY = 0;
+      m_panX = 0, m_panY = 0,
+      m_refresh = true;
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -174,13 +175,6 @@ geo.floodLayerSource = function(rise, bbox) {
       }, 'json');
   };
 
-//  var resolutionTable  = [
-//                           {end: 0.6,      resolution: 0.1},
-//                           {end: 0.06,     resolution: 0.05},
-//                           {end: 0.035,    resolution: 0.025},
-//                           {end: 0.0225,   resolution: 0.0125},
-//                           {end: Number.MIN_VALUE, resolution: 0.008333}
-//                         ];
     var resolutionTable  = [
                              {end: 5,      resolution: 0.1},
                              {end: 7,     resolution: 0.05},
@@ -374,9 +368,11 @@ var intersection = function(a, b) {
                   that.fetchPoints();
                 }
               });
+    }
 
-
+    if (m_refresh) {
       this.fetchPoints();
+      m_refresh = false;
     }
 
     if (!m_resolutionChanged)
@@ -426,6 +422,28 @@ var intersection = function(a, b) {
   ////////////////////////////////////////////////////////////////////////////
   this.getSpatialRange = function(varname) {
     return [0, 0];
+  };
+
+  this.rise = function(rise) {
+    if(rise !== undefined) {
+      m_rise = rise
+      // Need to trigger refresh
+      m_refresh = true
+
+      return this;
+    }
+    return m_rise;
+  };
+
+  this.boundingBox = function(bbox) {
+    if(bbox  !== undefined) {
+      m_bbox = bbox;
+      // Need to trigger refresh
+      m_refresh = true
+
+      return this
+    }
+    return m_bbox;
   };
 
   this.init();

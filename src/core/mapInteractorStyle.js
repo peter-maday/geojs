@@ -351,6 +351,21 @@ geo.mapInteractorStyle = function() {
 
   ////////////////////////////////////////////////////////////////////////////
   /**
+   * Clear draw region for this interactor
+   *
+   * @returns {geo.mapInteractorStyle}
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.clearDrawRegion = function()  {
+
+    if (m_drawRegionLayer)
+      m_map.removeLayer(m_drawRegionLayer);
+
+    m_drawRegionLayer = null;
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
    * Gets the draw region coordinates for this interactor
    *
    * @returns {Array} [lat1, lon1, lat2, lon2]
