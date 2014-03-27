@@ -183,8 +183,6 @@ geo.floodLayerSource = function(rise, bbox) {
                              {end: 13, resolution: 0.008333}
                            ];
 
-
-
   var selectResolution  = function(delta) {
     var i, res, start, step;
 
@@ -299,7 +297,7 @@ var intersection = function(a, b) {
                                   m_bbox[2][0], m_bbox[2][1]);
     }
 
-    if (m_dataResolution === res) {
+    if (m_dataResolution === res && !m_refresh) {
       // If data resolution hasn't changed and we are in the currently selected
       // bounding box then just return
       if (m_currentBBox.contains(clippedBBox))
