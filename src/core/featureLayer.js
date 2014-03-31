@@ -170,22 +170,8 @@ geo.featureLayer = function(options, feature) {
     return true;
   };
 
-  ////////////////////////////////////////////////////////////////////////////
-  /**
-   * Create legend for this layer
-   */
-  ////////////////////////////////////////////////////////////////////////////
-  this.createLegend = function() {
-    if (m_legend) {
-      console.log('[info] Legend already exists for this layer');
-      return false;
-    }
-
-    if (!this.dataSource()) {
-      return false;
-    }
-
-    // Assuming that first variable is the scalar
+  this.createLookupTable = function() {
+    /// Assuming that first variable is the scalar
     var varnames = this.dataSource().variableNames(), lut = null;
 
     if (varnames.length > 0) {
@@ -201,6 +187,25 @@ geo.featureLayer = function(options, feature) {
         varnames[0], lut, this.legendOrigin(), this.legendWidth(),
         this.legendHeight(), 10, 0);
     }
+  };
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Create legend for this layer
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.createLegend = function() {
+    if (m_legend) {
+      console.log('[info] Legend already exists for this layer');
+      return false;
+    }
+
+    if (!this.dataSource()) {
+      return false;
+    }
+
+    /// Assuming that first variable is the scalar
+    this.createLookupTable();
 
     return true;
   };
@@ -303,7 +308,7 @@ geo.featureLayer = function(options, feature) {
     m_newFeatures.length = 0;
 
     // Create legend if not created earlier
-    this.updateLegend(false);
+    //this.updateLegend(false);
 
     for(i = 0; i < data.length; ++i) {
       switch(data[i].type()) {
@@ -316,11 +321,10 @@ geo.featureLayer = function(options, feature) {
           // TODO this code could be moved to vgl
           noOfPrimitives = data[i].numberOfPrimitives();
           if (m_usePointSprites && noOfPrimitives === 1 &&
-              data[i].primitive(0).primitiveType() === gl.POINTS) {
+            data[i].primitive(0).primitiveType() === gl.POINTS) {
              geomFeature.setMaterial(vgl.utils.createPointSpritesMaterial(
-              m_pointSpritesImage));
+              m_pointSpritesImage, this.lookupTable()));
           } else {
-
           }
           m_newFeatures.push(geomFeature);
           break;

@@ -41,7 +41,8 @@ geo.floodLayerSource = function(rise, bbox) {
       m_resolutionChanged = false,
       m_that = this,
       m_panX = 0, m_panY = 0,
-      m_refresh = true;
+      m_refresh = true,
+      m_scalarsRange = [0, 20];
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -51,8 +52,7 @@ geo.floodLayerSource = function(rise, bbox) {
    */
   ////////////////////////////////////////////////////////////////////////////
   this.variableNames = function() {
-    return []
-    //return ["Projected Level"];
+    return ["Projected Level"];
   };
 
   ////////////////////////////////////////////////////////////////////////////
@@ -445,8 +445,13 @@ var intersection = function(a, b) {
     return m_bbox;
   };
 
+  this.setScalarRange = function(varname, val) {
+    /// TODO HACK
+    m_scalarsRange = val.slice(0);
+  }
+
   this.getScalarRange = function(varname) {
-    return [0, 20]
+    return m_scalarsRange;
   };
 
   this.init();
