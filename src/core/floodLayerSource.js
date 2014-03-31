@@ -460,7 +460,7 @@ var intersection = function(a, b) {
    * Set scalars range
    */
   ////////////////////////////////////////////////////////////////////////////
-  this.setScalarsRange = function(varname, val) {
+  this.setScalarRange = function(varname, val) {
     /// TODO HACK
     m_scalarsRange = val.slice(0);
   }
