@@ -37,6 +37,8 @@ geo.floodLayer = function() {
 
     // Now set the point size
     this.updatePointSize(m_pointSize);
+    //this.updateLegend(false);
+
   };
 
   this.pointSpriteSize = function(pointSize) {

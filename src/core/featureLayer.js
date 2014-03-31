@@ -246,9 +246,9 @@ geo.featureLayer = function(options, feature) {
       this.deleteLegend();
     }
 
-    if (m_invalidData) {
-      return;
-    }
+//    if (m_invalidData) {
+//      return;
+//    }
 
     if (deletePrevious || !m_legend) {
       this.createLegend();
@@ -289,7 +289,7 @@ geo.featureLayer = function(options, feature) {
       return;
     }
 
-    m_invalidData = false;
+
 
     // Clear our existing features
     if (!append) {
@@ -377,6 +377,8 @@ geo.featureLayer = function(options, feature) {
 
     data = this.dataSource().getData(time);
     this.addData(data);
+    if (data != null)
+      m_invalidData = false;
   };
 
   ////////////////////////////////////////////////////////////////////////////

@@ -51,7 +51,8 @@ geo.floodLayerSource = function(rise, bbox) {
    */
   ////////////////////////////////////////////////////////////////////////////
   this.variableNames = function() {
-    return "";
+    return []
+    //return ["Projected Level"];
   };
 
   ////////////////////////////////////////////////////////////////////////////
@@ -89,36 +90,36 @@ geo.floodLayerSource = function(rise, bbox) {
     return m_featureLayer;
   }
 
-  var getPoints = function(id) {
-    var errorString,
-        pointUrl = '/services/floodmap/' + id,
-        reader, geoJson;
-    $.get(pointUrl, function(response) {
-        if (response.error !== null) {
-          errorString = "[error] " + response.error ?
-            response.error : "no results returned from server";
-          console.log(errorString);
-        } else {
-
-          console.log("Starting to read GeoJSON")
-
-          if (response.result.geoJson) {
-            reader = vgl.geojsonReader();
-            geoJson = reader.readGJObject(response.result.geoJson);
-            m_featureLayer.addData(geoJson, true);
-            m_featureLayer.redraw();
-          }
-
-          if (response.result.hasMore) {
-            getPoints(id);
-          }
-        }
-      }, 'json');
-  };
+//  var getPoints = function(id) {
+//    var errorString,
+//        pointUrl = '/services/floodmap/' + id,
+//        reader, geoJson;
+//    $.get(pointUrl, function(response) {
+//        if (response.error !== null) {
+//          errorString = "[error] " + response.error ?
+//            response.error : "no results returned from server";
+//          console.log(errorString);
+//        } else {
+//
+//          console.log("Starting to read GeoJSON")
+//
+//          if (response.result.geoJson) {
+//            reader = vgl.geojsonReader();
+//            geoJson = reader.readGJObject(response.result.geoJson);
+//            m_featureLayer.addData(geoJson, true);
+//            m_featureLayer.redraw();
+//          }
+//
+//          if (response.result.hasMore) {
+//            getPoints(id);
+//          }
+//        }
+//      }, 'json');
+//  };
 
   var getCoursePoints = function(bbox, res, batch, clear, id) {
     var errorString,
-        pointUrl = '/services/floodmap',
+        pointUrl = '/services/floodmap/points',
         reader, geoJson;
 
     batch = batch !== undefined ? batch : 0;
@@ -290,11 +291,11 @@ var intersection = function(a, b) {
     end = this.featureLayer().container().displayToMap($('#glcanvas').width(), 0);
 
     clippedBBox = intersection([[start.x, start.y], [end.x, end.y]],
-                                [m_bbox[0], m_bbox[2]]);
+                                [m_bbox[0], m_bbox[1]]);
 
     if (clippedBBox == null) {
       clippedBBox = new Rectangle(m_bbox[0][0], m_bbox[0][1],
-                                  m_bbox[2][0], m_bbox[2][1]);
+                                  m_bbox[1][0], m_bbox[1][1]);
     }
 
     if (m_dataResolution === res && !m_refresh) {
@@ -380,7 +381,7 @@ var intersection = function(a, b) {
 
     $.ajax({
       type: 'POST',
-      url: '/services/floodmap',
+      url: '/services/floodmap/points',
       data: {
         bbox: JSON.stringify(m_bbox),
         rise: 20
@@ -442,6 +443,10 @@ var intersection = function(a, b) {
       return this
     }
     return m_bbox;
+  };
+
+  this.getScalarRange = function(varname) {
+    return [0, 20]
   };
 
   this.init();
