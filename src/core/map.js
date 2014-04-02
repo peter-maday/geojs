@@ -646,9 +646,6 @@ geo.map = function(node, options) {
   this.update = function() {
     computeZoom();
 
-    var start = this.displayToMap(0, 0);
-    var end = this.displayToMap(5, 5);
-
     // For now update all layers. In the future, we should be
     // able to perform updates based on the layer type
     var layerName = null;

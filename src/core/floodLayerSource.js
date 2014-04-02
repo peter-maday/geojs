@@ -158,8 +158,8 @@ geo.floodLayerSource = function(rise, bbox) {
 
               m_featureLayer.addData(geoJson, !clear);
               m_that.updatePointSize();
-              m_resolutionChanged = false;
               m_featureLayer.redraw();
+              m_resolutionChanged = false;
             }
 
             if ( response.result.hasMore) {

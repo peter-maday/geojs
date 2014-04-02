@@ -588,12 +588,6 @@ geo.featureLayer = function(options, feature) {
     }
   };
 
-  // THIS IS A HORRIBLE HACK!!!!!
-  this.redraw = function() {
-    if (m_request)
-      m_request.requestRedraw();
-  };
-
   // Update the opacity of the layer
   this.setOpacity(this.opacity());
 

@@ -34,11 +34,8 @@ geo.floodLayer = function() {
     append = append !== undefined ? append : false;
 
     m_super.addData.call(this, data, append);
-
     // Now set the point size
     this.updatePointSize(m_pointSize);
-    //this.updateLegend(false);
-
   };
 
   this.pointSpriteSize = function(pointSize) {
@@ -50,6 +47,10 @@ geo.floodLayer = function() {
     }
 
     return m_pointSize;
+  };
+
+  this.redraw = function() {
+    this.container().draw();
   };
 };
 
