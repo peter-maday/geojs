@@ -170,7 +170,7 @@ geo.featureLayer = function(options, feature) {
     return true;
   };
 
-  this.createLookupTable = function() {
+  this.createOrUpdateLookupTable = function() {
     /// Assuming that first variable is the scalar
     var varnames = this.dataSource().variableNames(), lut = null;
 
@@ -205,7 +205,7 @@ geo.featureLayer = function(options, feature) {
     }
 
     /// Assuming that first variable is the scalar
-    this.createLookupTable();
+    this.createOrUpdateLookupTable();
 
     return true;
   };
@@ -307,8 +307,8 @@ geo.featureLayer = function(options, feature) {
 
     m_newFeatures.length = 0;
 
-    // Create legend if not created earlier
-    //this.updateLegend(false);
+    /// Create of update lookup table if any
+    this.createOrUpdateLookupTable();
 
     for(i = 0; i < data.length; ++i) {
       switch(data[i].type()) {
