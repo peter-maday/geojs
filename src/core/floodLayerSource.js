@@ -42,7 +42,8 @@ geo.floodLayerSource = function(rise, bbox) {
       m_that = this,
       m_panX = 0, m_panY = 0,
       m_refresh = true,
-      m_scalarsRange = [0, 20];
+      m_scalarsRange = [0, 20],
+      m_thresh = 2.0;
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -117,7 +118,7 @@ geo.floodLayerSource = function(rise, bbox) {
 //      }, 'json');
 //  };
 
-  var getCoursePoints = function(bbox, res, batch, clear, id) {
+  var getCoursePoints = function(bbox, res, thresh, batch, clear, id) {
     var errorString,
         pointUrl = '/services/floodmap/points',
         reader, geoJson;
@@ -136,6 +137,7 @@ geo.floodLayerSource = function(rise, bbox) {
             'bbox': JSON.stringify(bbox),
             rise: m_rise,
             'res': res,
+            'thresh': thresh,
             'batch': batch
           },
         function(response) {
@@ -167,7 +169,7 @@ geo.floodLayerSource = function(rise, bbox) {
 
                 console.log("id: " + response.result.id);
 
-                getCoursePoints(bbox, response.result.res, response.result.batch,
+                getCoursePoints(bbox, response.result.res, thresh, response.result.batch,
                                 false, response.result.id);
               }, 1000);
             }
@@ -314,7 +316,8 @@ var intersection = function(a, b) {
 
     m_resolutionChanged = true;
 
-    getCoursePoints(clippedBBox.getBoundingBox(), m_dataResolution, 0, clear);
+    getCoursePoints(clippedBBox.getBoundingBox(),
+        m_dataResolution, m_thresh, 0, clear);
   };
 
   this.updatePointSize = function() {
@@ -454,6 +457,22 @@ var intersection = function(a, b) {
     }
     return m_bbox;
   };
+
+////////////////////////////////////////////////////////////////////////////
+  /**
+   * Update the K-means threshold
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.threshold = function(thresh) {
+    if(thresh  !== undefined) {
+      m_thresh = thresh;
+      // Need to trigger refresh
+      m_refresh = true
+
+      return this
+    }
+    return m_thresh;
+  }
 
   ////////////////////////////////////////////////////////////////////////////
   /**
