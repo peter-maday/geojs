@@ -43,7 +43,8 @@ geo.floodLayerSource = function(rise, bbox) {
       m_panX = 0, m_panY = 0,
       m_refresh = true,
       m_scalarsRange = [0, 20],
-      m_thresh = 2.0;
+      m_thresh = 2.0,
+      m_clusterSize = 50;
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -118,7 +119,7 @@ geo.floodLayerSource = function(rise, bbox) {
 //      }, 'json');
 //  };
 
-  var getCoursePoints = function(bbox, res, thresh, batch, clear, id) {
+  var getCoursePoints = function(bbox, res, thresh, cluster, batch, clear, id) {
     var errorString,
         pointUrl = '/services/floodmap/points',
         reader, geoJson;
@@ -138,6 +139,7 @@ geo.floodLayerSource = function(rise, bbox) {
             rise: m_rise,
             'res': res,
             'thresh': thresh,
+            'cluster': cluster,
             'batch': batch
           },
         function(response) {
@@ -169,8 +171,8 @@ geo.floodLayerSource = function(rise, bbox) {
 
                 console.log("id: " + response.result.id);
 
-                getCoursePoints(bbox, response.result.res, thresh, response.result.batch,
-                                false, response.result.id);
+                getCoursePoints(bbox, response.result.res, thresh, cluster,
+                    response.result.batch, false, response.result.id);
               }, 1000);
             }
           }
@@ -317,7 +319,7 @@ var intersection = function(a, b) {
     m_resolutionChanged = true;
 
     getCoursePoints(clippedBBox.getBoundingBox(),
-        m_dataResolution, m_thresh, 0, clear);
+        m_dataResolution, m_thresh, m_clusterSize, 0, clear);
   };
 
   this.updatePointSize = function() {
@@ -472,7 +474,24 @@ var intersection = function(a, b) {
       return this
     }
     return m_thresh;
+  };
+
+////////////////////////////////////////////////////////////////////////////
+  /**
+   * Update the K-means cluster size
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.clusterSize = function(cluster) {
+    if(cluster  !== undefined) {
+      m_clusterSize = cluster;
+      // Need to trigger refresh
+      m_refresh = true
+
+      return this
+    }
+    return m_clusterSize;
   }
+
 
   ////////////////////////////////////////////////////////////////////////////
   /**
