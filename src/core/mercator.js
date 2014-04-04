@@ -12,7 +12,7 @@
 
 geo.mercator = {
   r_major:6378137.0,  //Equatorial Radius, WGS84
-  r_minor:6356752.314245179,  //defined as constant
+  r_minor:6378137.0,  //defined as constant
   f:298.257223563 //1/f=(a-b)/a , a=r_major, b=r_minor
 };
 
