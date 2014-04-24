@@ -111,13 +111,12 @@ ggl.mapInteractorStyle = function() {
         m_camera.pan(-m_dx, -m_dy, -m_dz);
         currWorldPos = m_camera.position();
 
-        evt = {type: geo.event.pan,
-               last_display_pos: m_mouseLastPos,
+        evt = {last_display_pos: m_mouseLastPos,
                curr_display_pos: m_currentMousePos,
                last_world_pos: lastWorldPos,
                curr_world_pos: currWorldPos};
 
-        $(m_this).trigger(evt);
+        m_renderer.trigger(geo.event.pan, evt);
       }
     }
     if (m_middileMouseButtonDown) {
@@ -313,10 +312,9 @@ ggl.mapInteractorStyle = function() {
 
     /// Compute meters per pixel here and based on that decide the
     /// zoom level
-    evt = { type: geo.event.zoom,
-            curr_zoom: computeZoomLevel(newMercPerPixel),
+    evt = { curr_zoom: computeZoomLevel(newMercPerPixel),
             last_zoom: computeZoomLevel(oldMercPerPixel) };
-    $(m_this).trigger(evt);
+    m_renderer.trigger(geo.event.zoom, evt);
   };
 
   ////////////////////////////////////////////////////////////////////////////
