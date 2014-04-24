@@ -25,7 +25,7 @@ ggl.mapInteractorStyle = function() {
   }
   vgl.interactorStyle.call(this);
   var m_map, m_this = this, m_mapZoomLevel = 3, m_leftMouseButtonDown = false,
-      m_rightMouseButtonDown = false, m_middileMouseButtonDown = false,
+      m_rightMouseButtonDown = false, m_middleMouseButtonDown = false,
       m_initRightBtnMouseDown = false, m_drawRegionMode = false,
       m_drawRegionLayer, m_clickLatLng, m_width, m_height,
       m_renderer, m_renderWindow, m_camera, m_outsideCanvas,
@@ -119,7 +119,7 @@ ggl.mapInteractorStyle = function() {
         m_renderer.trigger(geo.event.pan, evt);
       }
     }
-    if (m_middileMouseButtonDown) {
+    if (m_middleMouseButtonDown) {
       /// DO NOTHING AS OF NOW
     }
     if (m_rightMouseButtonDown) {
@@ -159,7 +159,7 @@ ggl.mapInteractorStyle = function() {
       m_leftMouseButtonDown = true;
     }
     if (event.button === 1) {
-      m_middileMouseButtonDown = true;
+      m_middleMouseButtonDown = true;
     }
     if (event.button === 2) {
       m_rightMouseButtonDown = true;
@@ -211,7 +211,7 @@ ggl.mapInteractorStyle = function() {
       }
     }
     if (event.button === 1) {
-      m_middileMouseButtonDown = false;
+      m_middleMouseButtonDown = false;
     }
     if (event.button === 2) {
       m_rightMouseButtonDown = false;
@@ -234,8 +234,8 @@ ggl.mapInteractorStyle = function() {
 
     if (m_leftMouseButtonDown) {
       m_leftMouseButtonDown = false;
-    } else if (m_middileMouseButtonDown) {
-      m_middileMouseButtonDown = false;
+    } else if (m_middleMouseButtonDown) {
+      m_middleMouseButtonDown = false;
     } if (m_rightMouseButtonDown) {
       m_rightMouseButtonDown = false;
       m_initRightBtnMouseDown = false;
