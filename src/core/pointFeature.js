@@ -60,8 +60,6 @@ geo.pointFeature = function (arg) {
       {},
       {
         size: 1.0,
-        width: 1.0,
-        height: 1.0,
         color: [1.0, 1.0, 1.0],
         point_sprites: false,
         point_sprites_image: null

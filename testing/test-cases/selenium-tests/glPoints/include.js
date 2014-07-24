@@ -21,7 +21,8 @@ window.startTest = function (done) {
   var myMap = geo.map(mapOptions),
       table = [],
       citieslatlon = [],
-      colors = [];
+      colors = [],
+      size  = [];
 
   function resizeCanvas() {
     $('#map').width('100%');
@@ -55,7 +56,8 @@ window.startTest = function (done) {
             lon = lon.replace(/(^\s+|\s+$|^\"|\"$)/g, '');
             lon = parseFloat(lon);
             citieslatlon.push(lon, lat, 0.0);
-            colors.push(1.0, 1.0, 153.0 / 255.0);
+            colors.push(Math.random(), 0.0, Math.random());
+            size.push(Math.random() * 10.0);
           }
         }
       }
@@ -64,7 +66,7 @@ window.startTest = function (done) {
       myMap.draw();
       var layer = myMap.createLayer('feature');
       layer.createFeature('point')
-        .positions(citieslatlon);
+        .positions(citieslatlon).style({'color': colors, 'size': size});
       myMap.draw();
       done();
     }

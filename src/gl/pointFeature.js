@@ -61,9 +61,9 @@ ggl.pointFeature = function (arg) {
       }
 
       m_actor = vgl.utils.createPointSprites(style.point_sprites_image,
-                 positions, style.colors);
+                 positions, style.size, style.color);
     } else {
-      m_actor = vgl.utils.createPoints(positions, style.colors);
+      m_actor = vgl.utils.createPoints(positions, style.size, style.color);
     }
 
     this.renderer().contextRenderer().addActor(m_actor);
