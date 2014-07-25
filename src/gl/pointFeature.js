@@ -105,12 +105,6 @@ ggl.pointFeature = function (arg) {
           m_actor.material().shaderProgram().uniform("pointSize").set(
             [style.size, style.size]);
         }
-      } else {
-        /// Points only has support for size
-        if (style.size) {
-          m_actor.material().shaderProgram().uniform("pointSize").set(
-            style.size);
-        }
       }
     }
     this.updateTime().modified();
