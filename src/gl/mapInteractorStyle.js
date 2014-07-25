@@ -137,9 +137,9 @@ ggl.mapInteractorStyle = function () {
       return true; // allow bubbling up the event
     }
     if (m_leftMouseButtonDown) {
-      if (m_drawRegionMode) {
-        mouseWorldPoint = m_map.displayToMap(m_currentMousePos.x,
-          m_currentMousePos.y);
+      if(m_drawRegionMode) {
+        mouseWorldPoint = m_map.displayToGcs([m_currentMousePos.x,
+          m_currentMousePos.y]);
         m_this.setDrawRegion(m_clickLatLng.lat(), m_clickLatLng.lng(),
           mouseWorldPoint.y, mouseWorldPoint.x);
       } else {
@@ -212,8 +212,8 @@ ggl.mapInteractorStyle = function () {
       m_mouseLastPos.y = m_coords.y;
     }
 
-    if (m_drawRegionMode && m_leftMouseButtonDown) {
-      point = m_map.displayToMap(m_mouseLastPos.x, m_mouseLastPos.y);
+    if(m_drawRegionMode && m_leftMouseButtonDown) {
+      point = m_map.displayToGcs(m_mouseLastPos)[0];
       m_clickLatLng = geo.latlng(point.y, point.x);
       m_this.setDrawRegion(point.y, point.x, point.y, point.x);
     }

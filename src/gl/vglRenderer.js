@@ -391,6 +391,10 @@ ggl.vglRenderer = function (arg) {
   this._exit = function () {
   };
 
+  this.viewer = function() {
+     return m_viewer;
+  }
+
   return this;
 };
 

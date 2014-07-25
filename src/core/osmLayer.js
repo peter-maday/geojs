@@ -138,11 +138,17 @@ geo.osmLayer = function (arg) {
       output = [];
       output.length = input.length;
 
-      if (input[0] instanceof Object) {
-        for (i = 0; i < input.length; i += 1) {
-          output[i] = {};
-          output[i].x = input[i].x;
-          output[i].y = geo.mercator.y2lat(input[i].y);
+      if (input[0] instanceof Object && typeof(input[0].length) == "undefined") {
+
+        if (input[0].hasOwnProperty('x') && input[0].hasOwnProperty('y') ) {
+          for (i = 0; i < input.length; ++i) {
+            output[i] = {};
+            output[i].x = input[i].x;
+            output[i].y = geo.mercator.y2lat(input[i].y);
+          }
+        }
+        else {
+            throw 'Input must have x and y components';
         }
       } else if (input[0] instanceof Array) {
         for (i = 0; i < input.length; i += 1) {
