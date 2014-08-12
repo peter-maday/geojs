@@ -24,6 +24,7 @@ geo.renderer = function (arg) {
   var m_this = this,
       m_layer = arg.layer === undefined ? null : arg.layer,
       m_canvas = arg.canvas === undefined ? null : arg.canvas,
+      m_interactorStyle = null,
       m_initialized = false;
 
   ////////////////////////////////////////////////////////////////////////////
@@ -74,6 +75,21 @@ geo.renderer = function (arg) {
       return m_this.map().baseLayer();
     }
   };
+
+
+  this.interactorStyle = function(val) {
+    if (val === undefined) {
+      return m_interactorStyle;
+    }
+
+    m_interactorStyle = val;
+
+    if (m_interactorStyle.renderer() !== m_this) {
+      m_interactorStyle.renderer(m_this);
+    }
+
+    m_this.modified();
+  }
 
   ////////////////////////////////////////////////////////////////////////////
   /**

@@ -85,6 +85,7 @@ set(_source_files
   core/transform.js
   core/renderer.js
   core/osmLayer.js
+  core/interactorStyle.js
   gl/init.js
   gl/renderer.js
   gl/lineFeature.js
@@ -470,7 +471,7 @@ if(BUILD_TESTING)
 
   # JSLint tests.
   if(${JS_HINT_TESTS})
-    
+
     add_custom_target(
       jshint-binary
       ALL

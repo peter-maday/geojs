@@ -72,7 +72,7 @@ geo.layer = function (arg) {
       m_timeRange = null,
       m_source = arg.source || null,
       m_map = arg.map === undefined ? null : arg.map,
-      m_isReference = false,
+      m_isReference = arg.referenceLayer === undefined ? false : arg.referenceLayer,
       m_x = 0,
       m_y = 0,
       m_width = 0,

@@ -196,7 +196,9 @@ geo.map = function (arg) {
 
   ////////////////////////////////////////////////////////////////////////////
   /**
-   * Add layer to the map
+   * Add layer to the map.
+   *
+   * The first layer added is always treated as the base layer.
    *
    * @method addLayer
    * @param {geo.layer} layer to be added to the map
@@ -204,16 +206,19 @@ geo.map = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   this.createLayer = function (layerName, arg) {
+    ///  First layer is always the base layer
+    arg.referenceLayer = m_this.children().length === 0 ? true : false;
+
     var newLayer = geo.createLayer(
       layerName, m_this, arg);
 
     if (newLayer !== null || newLayer !== undefined) {
       newLayer._resize(m_x, m_y, m_width, m_height);
     } else {
-      return null;
+      throw "Unsupported layer type: " + layerName;
     }
 
-    if (newLayer.referenceLayer() || m_this.children().length === 0) {
+    if (newLayer.referenceLayer()) {
       m_this.baseLayer(newLayer);
     }
     m_this.addChild(newLayer);
@@ -243,6 +248,7 @@ geo.map = function (arg) {
       layer._exit();
 
       m_this.removeChild(layer);
+      layer._exit();
 
       m_this.modified();
 

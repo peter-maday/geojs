@@ -64,6 +64,9 @@ ggl.vglRenderer = function (arg) {
       m_height = 0,
       s_init = this._init;
 
+  if (m_this.layer().referenceLayer()) {
+    m_this.interactorStyle(m_viewer.interactorStyle());
+  }
   m_contextRenderer.setResetScene(false);
 
   ////////////////////////////////////////////////////////////////////////////
@@ -355,14 +358,13 @@ ggl.vglRenderer = function (arg) {
         m_viewer.handleDoubleClick(event);
       });
     }
-
     m_viewer.interactorStyle().map(m_this.layer().map());
-    m_viewer.interactorStyle().reset();
   };
 
   this.on(geo.event.layerAdd, function (event) {
     if (event.layer === m_this.layer()) {
       m_this._connectMapEvents();
+      m_viewer.interactorStyle().reset(event.layer.referenceLayer());
     }
   });
 
@@ -398,6 +400,10 @@ ggl.vglRenderer = function (arg) {
   ////////////////////////////////////////////////////////////////////////////
   this._exit = function () {
   };
+
+  this.viewer = function() {
+     return m_viewer;
+  }
 
   return this;
 };

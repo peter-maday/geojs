@@ -17,15 +17,16 @@ ggl.mapInteractorStyle = function () {
   if (!(this instanceof ggl.mapInteractorStyle)) {
     return new ggl.mapInteractorStyle();
   }
-  vgl.interactorStyle.call(this);
+  geo.interactorStyle.call(this);
   var m_map,
     m_this = this,
     m_leftMouseButtonDown = false,
     m_rightMouseButtonDown = false,
     m_middileMouseButtonDown = false,
     m_initRightBtnMouseDown = false,
-    m_drawRegionMode = false,
-    m_drawRegionLayer,
+    m_regionSelectionMode = false,
+    m_regionSelectionLayer,
+    m_regionSelectionPlane,
     m_clickLatLng,
     m_width,
     m_height,
@@ -41,6 +42,7 @@ ggl.mapInteractorStyle = function () {
     m_useLastDirection = false,
     m_lastDirection = null,
     m_picker = new vgl.picker(),
+    m_viewer = null,
     m_updateRenderParamsTime = vgl.timestamp();
 
   ////////////////////////////////////////////////////////////////////////////
@@ -54,29 +56,66 @@ ggl.mapInteractorStyle = function () {
   this.map = function (val) {
     if (val !== undefined) {
       m_map = val;
+
       return m_this;
     }
     return m_map;
   };
 
+////////////////////////////////////////////////////////////////////////////
+  /**
+   * Return viewer referenced by the interactor style
+   *
+   * @returns {null}
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.viewer = function() {
+    return m_viewer;
+  };
+
   ////////////////////////////////////////////////////////////////////////////
   /**
-   * Sets or gets drawRegionMode for this interactor
+   * Set viewer for the interactor style
+   *
+   * @param viewer
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.setViewer = function(viewer) {
+    if (viewer !== m_viewer) {
+      m_viewer = viewer;
+      $(m_viewer).on(vgl.event.mousePress, m_this.handleMouseDown);
+      $(m_viewer).on(vgl.event.mouseRelease, m_this.handleMouseUp);
+      $(m_viewer).on(vgl.event.mouseMove, m_this.handleMouseMove);
+      $(m_viewer).on(vgl.event.mouseOut, m_this.handleMouseOut);
+      $(m_viewer).on(vgl.event.mouseWheel, m_this.handleMouseWheel);
+      $(m_viewer).on(vgl.event.keyPress, m_this.handleKeyPress);
+      $(m_viewer).on(vgl.event.mouseContextMenu, m_this.handleContextMenu);
+      $(m_viewer).on(vgl.event.click, m_this.handleClick);
+      $(m_viewer).on(vgl.event.dblClick, m_this.handleDoubleClick);
+      m_this.modified();
+    }
+  };
+
+
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Sets or gets selectRegion for this interactor
    *
    * @param {Boolean} newValue optional
    * @returns {geo.mapInteractorStyle|Boolean}
    */
   ////////////////////////////////////////////////////////////////////////////
-  this.drawRegionMode = function (val) {
+  this.selectRegion = function (val) {
     if (val !== undefined) {
-      m_drawRegionMode = val;
-      if (m_drawRegionLayer) {
-        m_drawRegionLayer.setVisible(val);
+      m_regionSelectionMode = val;
+      if (!m_regionSelectionMode) {
+        m_regionSelectionLayer.deleteFeature(m_regionSelectionPlane);
       }
       m_map.draw();
       return m_this;
     }
-    return m_drawRegionMode;
+    return m_regionSelectionMode;
   };
 
   ////////////////////////////////////////////////////////////////////////////
@@ -103,6 +142,18 @@ ggl.mapInteractorStyle = function () {
 
   ////////////////////////////////////////////////////////////////////////////
   /**
+   * Clear region selection for this interactor
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.clearRegionSelection = function()  {
+
+    if (m_regionSelectionLayer) {
+      m_regionSelectionLayer.deleteFeature(m_regionSelectionPlane);
+    }
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
    * Handle mouse move event
    */
   ////////////////////////////////////////////////////////////////////////////
@@ -125,10 +176,9 @@ ggl.mapInteractorStyle = function () {
       return true; // allow bubbling up the event
     }
     if (m_leftMouseButtonDown) {
-      if (m_drawRegionMode) {
-        mouseWorldPoint = m_map.displayToMap(m_currentMousePos.x,
-          m_currentMousePos.y);
-        m_this.setDrawRegion(m_clickLatLng.lat(), m_clickLatLng.lng(),
+      if(m_regionSelectionMode) {
+        mouseWorldPoint = m_map.displayToGcs(m_currentMousePos);
+        m_this._setDrawRegion(m_clickLatLng.lat(), m_clickLatLng.lng(),
           mouseWorldPoint.y, mouseWorldPoint.x);
       } else {
         lastWorldPos = m_camera.position();
@@ -201,10 +251,10 @@ ggl.mapInteractorStyle = function () {
       m_lastMousePos.y = m_coords.y;
     }
 
-    if (m_drawRegionMode && m_leftMouseButtonDown) {
-      point = m_map.displayToMap(m_lastMousePos.x, m_lastMousePos.y);
+    if(m_regionSelectionMode && m_leftMouseButtonDown) {
+      point = m_map.displayToGcs(m_lastMousePos);
       m_clickLatLng = geo.latlng(point.y, point.x);
-      m_this.setDrawRegion(point.y, point.x, point.y, point.x);
+      m_this._setDrawRegion(point.y, point.x, point.y, point.x);
     }
 
     m_lastMousePos.x = m_currentMousePos.x;
@@ -222,7 +272,9 @@ ggl.mapInteractorStyle = function () {
   this.handleMouseUp = function (event) {
     var width = null,
         height = null,
-        num = null;
+        num = null,
+        coords,
+        regionSelectEvent;
 
     /// Update render params
     m_this.updateRenderParams();
@@ -235,6 +287,15 @@ ggl.mapInteractorStyle = function () {
       if (m_lastMousePos.x >= 0 && m_lastMousePos.x <= width &&
           m_lastMousePos.y >= 0 && m_lastMousePos.y <= height) {
         num = m_picker.pick(m_lastMousePos.x, m_lastMousePos.y, m_renderer);
+
+        if (m_regionSelectionMode) {
+          regionSelectEvent = jQuery.Event(geo.event.regionSelect);
+          coords = m_regionSelectionPlane.coords();
+          regionSelectEvent.origin = coords[0];
+          regionSelectEvent.upperLeft = coords[1];
+          regionSelectEvent.lowerRight = coords[2];
+          $(m_this).trigger(geo.event.regionSelect, regionSelectEvent);
+        }
       }
     }
     if (event.button === 1) {
@@ -379,7 +440,7 @@ ggl.mapInteractorStyle = function () {
    * @param {Number} optional value to zoom by
    */
   ////////////////////////////////////////////////////////////////////////////
-  this._syncReset = function () {
+  this._syncReset = function (resetAll) {
     var i, renderers, pos, fp, zoom, center, cam, clippingRange;
 
     /// Make sure we are uptodate with renderer and render window
@@ -392,7 +453,8 @@ ggl.mapInteractorStyle = function () {
     /// TODO: Call base layer - reference layer
     center = m_map.baseLayer().toLocal(geo.latlng(center[0], center[1]));
 
-    if (center instanceof Object &&
+    if (resetAll &&
+        center instanceof Object &&
         "x" in center &&
         "y" in center &&
         m_map.baseLayer() instanceof geo.osmLayer) {
@@ -569,40 +631,32 @@ ggl.mapInteractorStyle = function () {
    * @returns {geo.mapInteractorStyle}
    */
   ////////////////////////////////////////////////////////////////////////////
-  this.setDrawRegion = function (lat1, lon1, lat2, lon2) {
-    // TODO
-    // Use z-indexing or some other technique for the offsetting
-    var evt, plane = geo.planeFeature(
-      geo.latlng(lat1, lon1),
-      geo.latlng(lat2, lon2),
-      99
-    );
+  this._setDrawRegion = function (lat1, lon1, lat2, lon2) {
 
-    m_map.removeLayer(m_drawRegionLayer);
+    //m_drawRegionLayer.renderer().contextRenderer().setLayer(1);
 
-    m_drawRegionLayer = geo.featureLayer({
-      "opacity": 0.5,
-      "showAttribution": 1
-    }, plane);
+    if (!m_regionSelectionLayer) {
+      m_regionSelectionLayer = m_map.createLayer('feature', {
+        "opacity": 0.5,
+        "showAttribution": 1
+      });
+    }
 
-    m_map.addLayer(m_drawRegionLayer);
+    if (m_regionSelectionPlane) {
+      m_regionSelectionLayer.deleteFeature(m_regionSelectionPlane);
+    }
 
-    /// TODO pass bounding box
-    evt = jQuery.Event(geo.event.updateDrawRegionEvent);
-    $(m_this).trigger(geo.command.updateDrawRegionEvent, evt);
+    m_regionSelectionPlane = m_regionSelectionLayer.createFeature('plane')
+                      .origin(geo.latlng(lat1, lon2))
+                      .upperLeft(geo.latlng(lat1, lon1))
+                      .lowerRight(geo.latlng(lat2, lon2))
+                      .bin(2000);
+
+
+    m_regionSelectionPlane._update();
+    m_regionSelectionLayer._draw();
 
     return m_this;
-  };
-
-  ////////////////////////////////////////////////////////////////////////////
-  /**
-   * Gets the draw region coordinates for this interactor
-   *
-   * @returns {Array} [lat1, lon1, lat2, lon2]
-   */
-  ////////////////////////////////////////////////////////////////////////////
-  this.getDrawRegion = function () {
-    return m_drawRegionLayer.features()[0].getCoords();
   };
 
   ////////////////////////////////////////////////////////////////////////////
@@ -660,7 +714,7 @@ ggl.mapInteractorStyle = function () {
    * Reset to default
    */
   ////////////////////////////////////////////////////////////////////////////
-  this.reset = function () {
+  this.reset = function (resetAll) {
     var evt, zoom;
 
     if (!m_map) {
@@ -669,7 +723,7 @@ ggl.mapInteractorStyle = function () {
 
     zoom = m_map.zoom();
 
-    m_this._syncReset();
+    m_this._syncReset(resetAll);
 
     evt = { type: geo.event.zoom,
             curr_zoom: zoom,
@@ -716,4 +770,4 @@ ggl.mapInteractorStyle = function () {
   return this;
 };
 
-inherit(ggl.mapInteractorStyle, vgl.interactorStyle);
+inherit(ggl.mapInteractorStyle, geo.interactorStyle);
