@@ -35,6 +35,11 @@ geo.planeFeature = function (arg) {
                                     true : false,
       s_init = this._init;
 
+  if (arg.ul && arg.lr) {
+    m_this.dataTime().modified();
+    m_this.modified();
+  }
+
   ////////////////////////////////////////////////////////////////////////////
   /**
    * Get/Set origin

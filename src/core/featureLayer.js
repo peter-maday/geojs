@@ -152,10 +152,10 @@ geo.featureLayer = function (arg) {
     return m_this;
   };
 
-  ////////////////////////////////////////////////////////////////////////////
-  /**
-   * Update layer
-   */
+  this._exit = function() {
+    m_this.clear();
+  };
+
   ////////////////////////////////////////////////////////////////////////////
   this._update = function (request) {
     var i, reset = false;

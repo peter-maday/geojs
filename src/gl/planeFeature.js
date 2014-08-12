@@ -39,6 +39,7 @@ ggl.planeFeature = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   this._build = function () {
+    console.log('Hello!');
     var or = this.origin(),
         ul = this.upperLeft(),
         lr = this.lowerRight(),
@@ -89,6 +90,14 @@ ggl.planeFeature = function (arg) {
         }
       };
     }
+    console.log('done');
+    console.log(m_actor.material().binNumber());
+    console.log(m_actor.visible());
+    console.log(lr);
+    console.log(or);
+    console.log(ul);
+
+
     m_this.renderer().contextRenderer().addActor(m_actor);
     this.buildTime().modified();
   };
@@ -106,6 +115,11 @@ ggl.planeFeature = function (arg) {
     }
     if (this.updateTime().getMTime() <= this.getMTime()) {
       m_actor.setVisible(this.visible());
+
+      if (this.special) {
+        m_actor.special = true;
+        console.log("bin", this.bin());
+      }
       m_actor.material().setBinNumber(this.bin());
     }
 
