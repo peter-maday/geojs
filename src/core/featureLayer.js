@@ -64,7 +64,19 @@ geo.featureLayer = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   this.deleteFeature = function (feature) {
-    return m_this._delete(feature);
+    var i;
+
+    for (i = 0; i < m_features.length; i += 1) {
+      if (m_features[i] === feature) {
+        m_features[i]._exit();
+        m_this.dataTime().modified();
+        m_this.modified();
+        return m_features.splice(i, 1);
+      }
+    }
+    m_this.removeChild(feature);
+
+    return m_this;
   };
 
   ////////////////////////////////////////////////////////////////////////////
@@ -75,44 +87,14 @@ geo.featureLayer = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   this.features = function (val) {
-    return m_this._features(val);
-  };
-
-  ////////////////////////////////////////////////////////////////////////////
-  /**
-   * Get/Set drawables
-   */
-  ////////////////////////////////////////////////////////////////////////////
-  this._features = function (val) {
     if (val === undefined) {
       return m_features || [];
     } else {
       m_features = val.slice(0);
       m_this.dataTime().modified();
       m_this.modified();
+      return m_this;
     }
-    return m_this;
-  };
-
-  ////////////////////////////////////////////////////////////////////////////
-  /**
-   * Delete feature
-   */
-  ////////////////////////////////////////////////////////////////////////////
-  this._delete = function (feature) {
-    var i;
-
-    for (i = 0; i < m_features.length; i += 1) {
-      if (m_features[i] === feature) {
-        m_features[i]._exit();
-        m_features.splice(i, 1);
-        m_this.removeChild(feature);
-        m_this.dataTime().modified();
-        m_this.modified();
-        return m_this;
-      }
-    }
-
     return m_this;
   };
 
