@@ -275,7 +275,7 @@ ggl.mapInteractorStyle = function () {
         height = null,
         num = null,
         coords,
-        regionSelectEvent;
+        evt;
 
     /// Update render params
     m_this.updateRenderParams();
@@ -290,12 +290,15 @@ ggl.mapInteractorStyle = function () {
         num = m_picker.pick(m_lastMousePos.x, m_lastMousePos.y, m_renderer);
 
         if (m_regionSelectionMode) {
-          regionSelectEvent = jQuery.Event(geo.event.regionSelect);
           coords = m_regionSelectionPlane.coords();
-          regionSelectEvent.origin = coords[0];
-          regionSelectEvent.upperLeft = coords[1];
-          regionSelectEvent.lowerRight = coords[2];
-          $(m_this).trigger(geo.event.regionSelect, regionSelectEvent);
+          evt = {
+              type: geo.event.regionSelect,
+              origin: coords[0],
+              upperLeft: coords[1],
+              lowerRight: coords[2]
+          }
+
+          $(m_this).trigger(evt);
         }
       }
     }
