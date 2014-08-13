@@ -149,6 +149,7 @@ ggl.mapInteractorStyle = function () {
 
     if (m_regionSelectionLayer) {
       m_regionSelectionLayer.deleteFeature(m_regionSelectionPlane);
+      m_regionSelectionPlane = null;
     }
   }
 

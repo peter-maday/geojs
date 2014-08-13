@@ -91,6 +91,7 @@ geo.featureLayer = function (arg) {
       m_this.dataTime().modified();
       m_this.modified();
     }
+    return m_this;
   };
 
   ////////////////////////////////////////////////////////////////////////////
@@ -104,12 +105,13 @@ geo.featureLayer = function (arg) {
     for (i = 0; i < m_features.length; i += 1) {
       if (m_features[i] === feature) {
         m_features[i]._exit();
+        m_features.splice(i, 1);
+        m_this.removeChild(feature);
         m_this.dataTime().modified();
         m_this.modified();
-        return m_features.splice(i, 1);
+        return m_this;
       }
     }
-    m_this.removeChild(feature);
 
     return m_this;
   };
