@@ -81,6 +81,26 @@ geo.featureLayer = function (arg) {
 
   ////////////////////////////////////////////////////////////////////////////
   /**
+   * Delete all features
+   *
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.deleteAllFeature = function () {
+    var i;
+
+    for (i = 0; i < m_features.length; i += 1) {
+      m_features[i]._exit();
+      m_this.dataTime().modified();
+      m_this.modified();
+      m_this.removeChild(m_features[i]);
+    }
+
+    return m_this;
+  };
+
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
    * Get/Set drawables
    *
    * @returns {Array}
