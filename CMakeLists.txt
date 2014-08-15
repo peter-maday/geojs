@@ -73,6 +73,8 @@ set(_source_files
   core/featureLayer.js
   core/event.js
   core/time.js
+  core/fileReader.js
+  core/jsonReader.js
   core/map.js
   core/feature.js
   core/pointFeature.js
@@ -253,6 +255,11 @@ if(BUILD_TESTING)
   configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/testing/js/blanket.min.js
     ${GEOJS_DEPLOY_DIR}/test/lib/blanket.min.js
+    COPYONLY
+  )
+  configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/testing/js/jasmine-boot.js
+    ${GEOJS_DEPLOY_DIR}/test/lib/jasmine-boot.js
     COPYONLY
   )
   configure_file(
