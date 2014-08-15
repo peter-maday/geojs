@@ -85,7 +85,7 @@ geo.featureLayer = function (arg) {
    *
    */
   ////////////////////////////////////////////////////////////////////////////
-  this.deleteAllFeature = function () {
+  this.deleteAllFeatures = function () {
     var i;
 
     for (i = 0; i < m_features.length; i += 1) {
