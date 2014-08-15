@@ -47,7 +47,7 @@ ggl.pointFeature = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   this._build = function () {
-    var style = m_this.style(),
+    var i, newPositions, style = m_this.style(),
         positions = geo.transform.transformFeature(
           m_this.renderer().map().gcs(),
           m_this,
@@ -58,15 +58,27 @@ ggl.pointFeature = function (arg) {
       m_this.renderer().contextRenderer().removeActor(m_actor);
     }
 
+    if (positions[0] && positions[0] instanceof geo.latlng) {
+      newPositions = [];
+      newPositions.length = positions.length * 3;
+      for (i = 0; i < positions.length; ++i) {
+        newPositions[i * 3] = positions[i].x();
+        newPositions[i * 3 + 1] = positions[i].y();
+        newPositions[i * 3 + 2] = 0.0;
+      }
+    } else {
+      newPositions = positions;
+    }
+
     if (style.point_sprites === true) {
       if (style.point_sprites_image === null) {
         throw "[error] Invalid image for point sprites";
       }
 
       m_actor = vgl.utils.createPointSprites(style.point_sprites_image,
-                 positions, style.colors);
+          newPositions, style.colors);
     } else {
-      m_actor = vgl.utils.createPoints(positions, style.colors);
+      m_actor = vgl.utils.createPoints(newPositions, style.colors);
     }
 
     m_this.renderer().contextRenderer().addActor(m_actor);
@@ -111,8 +123,8 @@ ggl.pointFeature = function (arg) {
       } else {
         /// Points only has support for size
         if (style.size) {
-          m_actor.material().shaderProgram().uniform("pointSize").set(
-            style.size);
+          //m_actor.material().shaderProgram().uniform("pointSize").set(
+            //style.size);
         }
       }
     }
