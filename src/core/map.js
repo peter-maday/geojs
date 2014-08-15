@@ -207,6 +207,10 @@ geo.map = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   this.createLayer = function (layerName, arg) {
+
+    // Allow arg to be undefined
+    arg = arg !== undefined ? arg : {}
+
     ///  First layer is always the base layer
     arg.referenceLayer = m_this.children().length === 0 ? true : false;
 
