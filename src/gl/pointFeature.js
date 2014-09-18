@@ -30,7 +30,6 @@ ggl.pointFeature = function (arg) {
       s_init = this._init,
       s_update = this._update;
 
-
   function createVertexShader() {
     var vertexShaderSource = " \n\
           attribute vec3 pos; \n\
@@ -128,6 +127,7 @@ ggl.pointFeature = function (arg) {
             } \n\
             //float step = smoothstep (1.0 - antialiasDist, 1.0, rad); \n\
             //gl_FragColor = mix (color, vec4 (color.rgb, 0.0), step); \n\
+            //gl_FragColor = vec4(1.0, 0.0,0.0, 1.0); \n\
           }",
         shader = new vgl.shader(gl.FRAGMENT_SHADER);
     shader.setShaderSource(fragmentShaderSource);
@@ -150,11 +150,12 @@ ggl.pointFeature = function (arg) {
 //         point_shader.data ('pix_w', 2.0 / engine.canvas.width ());
 
   function createGLPoints () {
-    var i, numPts = 2 * m_this.positions().length,
+    var i, numPts = m_this.data().length,
         alpha = 1.0, start, unit = rect(0, 0, 1, 1),
-        positions = geo.transform.transformCoordinates(
-                      m_this.gcs(), m_this.layer().map().gcs(),
-                      m_this.positions(), 3),
+        positions = [], radius = [], strokeWidth = [],
+        fillColor = [], fill = [], strokeColor = [], stroke = [],
+        alpha = [], posFunc, radFunc, strokeWidthFunc, fillColorFunc,
+        fillFunc, strokeColorFunc, strokeFunc, alphaFunc,
         buffers = vgl.DataBuffers(1024),
         sourcePositions = vgl.sourceDataP3fv(),
         sourceUnits = vgl.sourceDataAnyfv(2,
@@ -188,12 +189,38 @@ ggl.pointFeature = function (arg) {
         strokeColorAttr = vgl.vertexAttribute("strokeColor"),
         strokeAttr = vgl.vertexAttribute("stroke"),
         alphaAttr = vgl.vertexAttribute("alpha"),
-        pixelWidthUniform = new vgl.floatUniform("pixelWidth", 2.0 / m_this.renderer().width()),
-        aspectUniform = new vgl.floatUniform("aspect", m_this.renderer().width() / m_this.renderer().height()),
+        pixelWidthUniform = new vgl.floatUniform("pixelWidth",
+                              2.0 / m_this.renderer().width()),
+        aspectUniform = new vgl.floatUniform("aspect",
+                          m_this.renderer().width() / m_this.renderer().height()),
         modelViewUniform = new vgl.modelViewUniform("modelViewMatrix"),
         projectionUniform = new vgl.projectionUniform("projectionMatrix"),
         geom = vgl.geometryData(),
         mapper = vgl.mapper();
+
+      posFunc = m_this.positions();
+      radFunc = m_this.style().radius;
+      strokeWidthFunc = m_this.style().strokeWidth;
+      fillColorFunc = m_this.style().fillColor;
+      fillFunc = m_this.style().fill;
+      strokeColorFunc = m_this.style().strokeColor;
+      strokeFunc = m_this.style().stroke;
+      alphaFunc = m_this.style().alpha;
+
+      m_this.data().forEach(function (item) {
+        positions.push(posFunc(item));
+        radius.push(radFunc(item));
+        strokeWidth.push(strokeWidthFunc(item));
+        fill.push(fillFunc(item));
+        fillColor.push(fillColorFunc(item));
+        strokeColor.push(strokeColorFunc(item));
+        stroke.push(strokeFunc(item));
+        alpha.push(alphaFunc(item));
+      });
+
+    positions = geo.transform.transformCoordinates(
+                  m_this.gcs(), m_this.layer().map().gcs(),
+                  positions, 3);
 
     buffers.create ('pos', 3);
     buffers.create ('indices', 1);
@@ -231,60 +258,20 @@ ggl.pointFeature = function (arg) {
     m_actor = vgl.actor();
     m_actor.setMaterial(mat);
 
-    start = buffers.alloc (3 * numPts);
-
-    // Instructions on how to write to the buffers for specific styles
-    m_this.styleMap = {
-      'fill': function (color) {
-        if (!color || color == 'none') {
-          buffers.repeat ('fill', [-.75], start, numPts);
-        }
-        else {
-          buffers.repeat ('fill', [.75], start, numPts);
-          buffers.repeat ('fillColor', color, start, numPts);                                }
-      },
-      'opacity': function (opacity) {
-        if (!opacity || opacity == 'none') {
-          opacity = [1.0];
-        }
-        buffers.repeat ('alpha', opacity, start, numPts);
-      },
-      'radius': function (rad) {
-        if (!rad || rad == 'none') {
-          rad = [4.0];
-        }
-        buffers.repeat ('rad', rad, start, numPts);
-      },
-      'stroke': function (color) {
-          if (!color || color == 'none') {
-            buffers.repeat ('stroke', [-.75], start, numPts);
-          }
-          else {
-            buffers.repeat ('stroke', [.75], start, numPts);
-            buffers.repeat ('strokeColor', color, start, numPts);
-          }
-      },
-      'strokeWidth': function (width) {
-        if (!width || width == 'none') {
-          width = [10.0];
-        }
-        buffers.repeat ('strokeWidth', width, start, numPts);
-      }
-    };
-
+    start = buffers.alloc (6 * numPts);
     for (i = 0; i < numPts; ++i) {
-      buffers.repeat ('pos', [positions[i * 3],
-                      positions[i * 3 + 1], positions[i * 3 + 2]],
+      buffers.repeat ('pos', positions[i],
                       start + i * 6, 6);
       buffers.write ('unit', unit, start + i * 6, 6);
-      buffers.write("indices", [i], start + i, 1);
+      buffers.write ("indices", [i], start + i, 1);
+      buffers.repeat ("rad", [radius[i]], start + i * 6, 6);
+      buffers.repeat ("strokeWidth", [strokeWidth[i]], start + i * 6, 6);
+      buffers.repeat ("fillColor", fillColor[i], start + i * 6, 6);
+      buffers.repeat ("fill", [fill[i]], start + i * 6, 6);
+      buffers.repeat ("strokeColor", strokeColor[i], start + i * 6, 6);
+      buffers.repeat ("stroke", [stroke[i]], start + i * 6, 6);
+      buffers.repeat ("alpha", [alpha[i]], start + i * 6, 6);
     }
-
-    m_this.styleMap.fill([1.0, 0.0, 0.0]);
-    m_this.styleMap.opacity();
-    m_this.styleMap.radius();
-    m_this.styleMap.stroke([0.0, 1.0, 0.0]);
-    m_this.styleMap.strokeWidth();
 
     sourcePositions.pushBack(buffers.get("pos"));
     geom.addSource(sourcePositions);
@@ -326,7 +313,7 @@ ggl.pointFeature = function (arg) {
    * Initialize
    */
   ////////////////////////////////////////////////////////////////////////////
-  this._init = function (arg) {
+  this._init = function () {
     s_init.call(m_this, arg);
   };
 
@@ -338,12 +325,7 @@ ggl.pointFeature = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   this._build = function () {
-    var style = m_this.style(),
-        positions = geo.transform.transformFeature(
-          m_this.renderer().map().gcs(),
-          m_this,
-          false
-    );
+    var style = m_this.style();
 
     if (m_actor) {
       m_this.renderer().contextRenderer().removeActor(m_actor);
@@ -368,13 +350,13 @@ ggl.pointFeature = function (arg) {
 
     s_update.call(m_this);
 
-    if (m_this.dataTime().getMTime() >= m_this.buildTime().getMTime()) {
+    // For now build if the data or style changes. In the future we may
+    // we able to partially update the data using dynamic gl buffers.
+    if (m_this.dataTime().getMTime() >= m_this.buildTime().getMTime() ||
+        m_this.updateTime().getMTime() < m_this.getMTime()) {
       m_this._build();
     }
 
-    if (m_this.updateTime().getMTime() < m_this.getMTime()) {
-      m_this._build();
-    }
     m_this.updateTime().modified();
   };
 
@@ -387,7 +369,7 @@ ggl.pointFeature = function (arg) {
     m_this.renderer().contextRenderer().removeActor(m_actor);
   };
 
-  this._init(arg);
+  m_this._init();
   return this;
 };
 

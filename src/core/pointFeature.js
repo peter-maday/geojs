@@ -26,8 +26,21 @@ geo.pointFeature = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   var m_this = this,
+      m_data = null,
       m_positions = arg.positions === undefined ? null : arg.positions,
+      m_radius = arg.radius = undefined ? null : arg.radius,
       s_init = this._init;
+
+  this.data = function(data) {
+    if (data === undefined) {
+      return m_data;
+    } else {
+      m_data = data;
+      m_this.dataTime().modified();
+      m_this.modified();
+      return m_this;
+    }
+  };
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -40,13 +53,13 @@ geo.pointFeature = function (arg) {
     if (val === undefined) {
       return m_positions;
     } else {
-      // Copy incoming array of positions
-      m_positions = val.slice(0);
+      m_positions = val;
       m_this.dataTime().modified();
       m_this.modified();
-      return m_this;
     }
+    return m_this;
   };
+
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -59,12 +72,15 @@ geo.pointFeature = function (arg) {
     var defaultStyle = $.extend(
       {},
       {
-        size: 1.0,
-        width: 1.0,
-        height: 1.0,
-        color: [1.0, 1.0, 1.0],
-        point_sprites: false,
-        point_sprites_image: null
+        radius: function (d) { return 10.0; },
+        stroke: function (d) { return -0.75; },
+        strokeColor: function (d) { return [1.0, 1.0, 1.0]; },
+        strokeWidth: function (d) { return 10.0; },
+        fillColor: function (d) { return [1.0, 0.0, 0.0]; },
+        fill: function (d) { return 0.75; },
+        alpha: function (d) { return 1.0; },
+        sprites: false,
+        sprites_image: null
       },
       arg.style === undefined ? {} : arg.style
     );
@@ -76,7 +92,6 @@ geo.pointFeature = function (arg) {
     }
   };
 
-  m_this._init(arg);
   return m_this;
 };
 
