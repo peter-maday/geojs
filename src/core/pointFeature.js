@@ -31,6 +31,13 @@ geo.pointFeature = function (arg) {
       m_radius = arg.radius = undefined ? null : arg.radius,
       s_init = this._init;
 
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Get/Set data
+   *
+   * @returns {Array}
+   */
+  ////////////////////////////////////////////////////////////////////////////
   this.data = function(data) {
     if (data === undefined) {
       return m_data;

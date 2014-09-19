@@ -325,7 +325,6 @@ ggl.pointFeature = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   this._build = function () {
-    var style = m_this.style();
 
     if (m_actor) {
       m_this.renderer().contextRenderer().removeActor(m_actor);
@@ -356,6 +355,9 @@ ggl.pointFeature = function (arg) {
         m_this.updateTime().getMTime() < m_this.getMTime()) {
       m_this._build();
     }
+
+    m_actor.setVisible(m_this.visible());
+    m_actor.material().setBinNumber(m_this.bin());
 
     m_this.updateTime().modified();
   };
