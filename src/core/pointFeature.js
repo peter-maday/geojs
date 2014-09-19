@@ -27,7 +27,7 @@ geo.pointFeature = function (arg) {
   ////////////////////////////////////////////////////////////////////////////
   var m_this = this,
       m_data = null,
-      m_positions = arg.positions === undefined ? null : arg.positions,
+      m_position = arg.position === undefined ? null : arg.position,
       m_radius = arg.radius = undefined ? null : arg.radius,
       s_init = this._init;
 
@@ -44,16 +44,16 @@ geo.pointFeature = function (arg) {
 
   ////////////////////////////////////////////////////////////////////////////
   /**
-   * Get/Set positions
+   * Get/Set position
    *
    * @returns {geo.pointFeature}
    */
   ////////////////////////////////////////////////////////////////////////////
-  this.positions = function (val) {
+  this.position = function (val) {
     if (val === undefined) {
-      return m_positions;
+      return m_position;
     } else {
-      m_positions = val;
+      m_position = val;
       m_this.dataTime().modified();
       m_this.modified();
     }
@@ -78,7 +78,7 @@ geo.pointFeature = function (arg) {
         strokeWidth: function (d) { return 10.0; },
         fillColor: function (d) { return [1.0, 0.0, 0.0]; },
         fill: function (d) { return 0.75; },
-        alpha: function (d) { return 1.0; },
+        fillOpacity: function (d) { return 1.0; },
         sprites: false,
         sprites_image: null
       },
@@ -87,7 +87,7 @@ geo.pointFeature = function (arg) {
 
     m_this.style(defaultStyle);
 
-    if (m_positions) {
+    if (m_position) {
       m_this.dataTime().modified();
     }
   };

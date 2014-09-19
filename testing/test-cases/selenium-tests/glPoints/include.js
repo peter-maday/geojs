@@ -66,12 +66,19 @@ window.startTest = function (done) {
       layer.createFeature('point')
         .data(citieslatlon)
         .style("fillColor", function(d) {
-          if (d.lon <  -100) {
+          if (d.lon < -100) {
             return [1.0, 0.0, 0.0];
           }
           return [0.0, 0.0, 1.0];
         })
-        .positions(function(d) { return [d.lon, d.lat, d.elev]; });
+        .style("fillOpacity", function(d) {
+          if (d.lon < -100) {
+            return 0.5;
+          } else {
+            return 0.25;
+          }
+        })
+        .position(function(d) { return [d.lon, d.lat, d.elev]; });
       myMap.draw();
       myMap.onIdle(done);
     }
