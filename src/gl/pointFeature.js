@@ -125,9 +125,6 @@ ggl.pointFeature = function (arg) {
               float step = smoothstep (1.0 - antialiasDist, 1.0, rad); \n\
               gl_FragColor = mix (strokeColor, vec4 (strokeColor.rgb, 0.0), step); \n\
             } \n\
-            //float step = smoothstep (1.0 - antialiasDist, 1.0, rad); \n\
-            //gl_FragColor = mix (color, vec4 (color.rgb, 0.0), step); \n\
-            //gl_FragColor = vec4(1.0, 0.0,0.0, 1.0); \n\
           }",
         shader = new vgl.shader(gl.FRAGMENT_SHADER);
     shader.setShaderSource(fragmentShaderSource);
