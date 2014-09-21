@@ -83,6 +83,7 @@ geo.pointFeature = function (arg) {
         stroke: function (d) { return -0.75; },
         strokeColor: function (d) { return [1.0, 1.0, 1.0]; },
         strokeWidth: function (d) { return 10.0; },
+        strokeOpacity: function (d) { return 0.0; },
         fillColor: function (d) { return [1.0, 0.0, 0.0]; },
         fill: function (d) { return 0.75; },
         fillOpacity: function (d) { return 1.0; },
