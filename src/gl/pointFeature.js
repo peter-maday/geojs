@@ -89,7 +89,7 @@ ggl.pointFeature = function (arg) {
           varying float fillVar; \n\
           varying float strokeVar; \n\
           bool to_bool (in float value) { \n\
-            if (value < 0.0) \n\
+            if (value < 1.0) \n\
               return false; \n\
             else \n\
               return true; \n\
@@ -144,9 +144,6 @@ ggl.pointFeature = function (arg) {
     return verts;
   };
 
-// point_shader.data ('aspect', engine.canvas.width () / engine.canvas.height ());
-//         point_shader.data ('pix_w', 2.0 / engine.canvas.width ());
-
   function createGLPoints () {
     var i, numPts = m_this.data().length,
         fillOpacity = 1.0, start, unit = rect(0, 0, 1, 1),
@@ -156,24 +153,15 @@ ggl.pointFeature = function (arg) {
         fillColorFunc, fillFunc, strokeColorFunc, strokeFunc, fillOpacityFunc,
         strokeOpactityFunc, buffers = vgl.DataBuffers(1024),
         sourcePositions = vgl.sourceDataP3fv(),
-        sourceUnits = vgl.sourceDataAnyfv(2,
-          vgl.vertexAttributeKeys.CountAttributeIndex + 1),
-        sourceRadius = vgl.sourceDataAnyfv(1,
-          vgl.vertexAttributeKeys.CountAttributeIndex + 2),
-        sourceStokeWidth = vgl.sourceDataAnyfv(1,
-          vgl.vertexAttributeKeys.CountAttributeIndex + 3),
-        sourceFillColor = vgl.sourceDataAnyfv(3,
-          vgl.vertexAttributeKeys.CountAttributeIndex + 4),
-        sourceFill = vgl.sourceDataAnyfv(1,
-          vgl.vertexAttributeKeys.CountAttributeIndex + 5),
-        sourceStrokeColor = vgl.sourceDataAnyfv(3,
-          vgl.vertexAttributeKeys.CountAttributeIndex + 6),
-        sourceStroke = vgl.sourceDataAnyfv(1,
-          vgl.vertexAttributeKeys.CountAttributeIndex + 7),
-        sourceAlpha = vgl.sourceDataAnyfv(1,
-          vgl.vertexAttributeKeys.CountAttributeIndex + 8),
-        sourceStrokeOpacity = vgl.sourceDataAnyfv(1,
-          vgl.vertexAttributeKeys.CountAttributeIndex + 9),
+        sourceUnits = vgl.sourceDataAnyfv(2, vgl.vertexAttributeKeysIndexed.One),
+        sourceRadius = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Two),
+        sourceStokeWidth = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Three),
+        sourceFillColor = vgl.sourceDataAnyfv(3, vgl.vertexAttributeKeysIndexed.Four),
+        sourceFill = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Five),
+        sourceStrokeColor = vgl.sourceDataAnyfv(3, vgl.vertexAttributeKeysIndexed.Six),
+        sourceStroke = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Seven),
+        sourceAlpha = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Eight),
+        sourceStrokeOpacity = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Nine),
         trianglesPrimitive = vgl.triangles(),
         mat = vgl.material(),
         blend = vgl.blend(),
@@ -239,15 +227,15 @@ ggl.pointFeature = function (arg) {
 
     // TODO: Right now this is ugly but we will fix it.
     prog.addVertexAttribute(posAttr, vgl.vertexAttributeKeys.Position);
-    prog.addVertexAttribute(unitAttr, vgl.vertexAttributeKeys.CountAttributeIndex + 1);
-    prog.addVertexAttribute(radAttr, vgl.vertexAttributeKeys.CountAttributeIndex + 2);
-    prog.addVertexAttribute(stokeWidthAttr, vgl.vertexAttributeKeys.CountAttributeIndex + 3);
-    prog.addVertexAttribute(fillColorAttr, vgl.vertexAttributeKeys.CountAttributeIndex + 4);
-    prog.addVertexAttribute(fillAttr, vgl.vertexAttributeKeys.CountAttributeIndex + 5);
-    prog.addVertexAttribute(strokeColorAttr, vgl.vertexAttributeKeys.CountAttributeIndex + 6);
-    prog.addVertexAttribute(strokeAttr, vgl.vertexAttributeKeys.CountAttributeIndex + 7);
-    prog.addVertexAttribute(fillOpacityAttr, vgl.vertexAttributeKeys.CountAttributeIndex + 8);
-    prog.addVertexAttribute(strokeOpacityAttr, vgl.vertexAttributeKeys.CountAttributeIndex + 9);
+    prog.addVertexAttribute(unitAttr, vgl.vertexAttributeKeysIndexed.One);
+    prog.addVertexAttribute(radAttr, vgl.vertexAttributeKeysIndexed.Two);
+    prog.addVertexAttribute(stokeWidthAttr, vgl.vertexAttributeKeysIndexed.Three);
+    prog.addVertexAttribute(fillColorAttr, vgl.vertexAttributeKeysIndexed.Four);
+    prog.addVertexAttribute(fillAttr, vgl.vertexAttributeKeysIndexed.Five);
+    prog.addVertexAttribute(strokeColorAttr, vgl.vertexAttributeKeysIndexed.Six);
+    prog.addVertexAttribute(strokeAttr, vgl.vertexAttributeKeysIndexed.Seven);
+    prog.addVertexAttribute(fillOpacityAttr, vgl.vertexAttributeKeysIndexed.Eight);
+    prog.addVertexAttribute(strokeOpacityAttr, vgl.vertexAttributeKeysIndexed.Nine);
 
     prog.addUniform(pixelWidthUniform);
     prog.addUniform(aspectUniform);
@@ -276,6 +264,7 @@ ggl.pointFeature = function (arg) {
       buffers.repeat ("strokeColor", strokeColor[i], start + i * 6, 6);
       buffers.repeat ("stroke", [stroke[i]], start + i * 6, 6);
       buffers.repeat ("fillOpacity", [fillOpacity[i]], start + i * 6, 6);
+      buffers.repeat ("strokeOpacity", [strokeOpacity[i]], start + i * 6, 6);
     }
 
     sourcePositions.pushBack(buffers.get("pos"));
@@ -304,6 +293,9 @@ ggl.pointFeature = function (arg) {
 
     sourceAlpha.pushBack(buffers.get("fillOpacity"));
     geom.addSource(sourceAlpha);
+
+    sourceStrokeOpacity.pushBack(buffers.get("strokeOpacity"));
+    geom.addSource(sourceStrokeOpacity);
 
     trianglesPrimitive.setIndices(buffers.get("indices"));
     geom.addPrimitive(trianglesPrimitive);

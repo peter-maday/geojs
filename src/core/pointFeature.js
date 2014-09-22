@@ -80,12 +80,12 @@ geo.pointFeature = function (arg) {
       {},
       {
         radius: function (d) { return 10.0; },
-        stroke: function (d) { return -0.75; },
-        strokeColor: function (d) { return [1.0, 1.0, 1.0]; },
-        strokeWidth: function (d) { return 10.0; },
-        strokeOpacity: function (d) { return 0.0; },
+        stroke: function (d) { return 1.0; },
+        strokeColor: function (d) { return [0.0, 1.0, 0.0]; },
+        strokeWidth: function (d) { return 2.0; },
+        strokeOpacity: function (d) { return 1.0; },
         fillColor: function (d) { return [1.0, 0.0, 0.0]; },
-        fill: function (d) { return 0.75; },
+        fill: function (d) { return 1.0; },
         fillOpacity: function (d) { return 1.0; },
         sprites: false,
         sprites_image: null
