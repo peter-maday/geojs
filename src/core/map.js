@@ -306,6 +306,22 @@ geo.map = function (arg) {
 
   ////////////////////////////////////////////////////////////////////////////
   /**
+   * Get the current map size.  Returns an object with the following
+   * properties:
+   *
+   *   * width
+   *   * height
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.size = function () {
+    return {
+      width: m_width,
+      height: m_height
+    };
+  };
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
    * Resize map
    *
    * @param {Number} x x-offset in display space
