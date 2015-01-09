@@ -39,7 +39,6 @@ geo.map = function (arg) {
       m_transition = null,
       m_queuedTransition = null,
       m_clock = null,
-      m_clock = null,
       m_bounds = {};
 
 
