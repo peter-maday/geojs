@@ -132,11 +132,7 @@ geo.gl.polygonFeature = function (arg) {
           posInstance = posFunc(extRingCoords,
                                 polygonItemCoordIndex,
                                 item, itemIndex);
-          if (posInstance instanceof geo.latlng) {
-            extRing[0].push({x: posInstance.x(), y: posInstance.y()});
-          } else {
-            extRing[0].push({x: posInstance.x, y: posInstance.y});
-          }
+          extRing[0].push({x: posInstance.x, y: posInstance.y});
 
           fillColorInstance = fillColorFunc(extRingCoords,
                                             polygonItemCoordIndex,
@@ -169,11 +165,7 @@ geo.gl.polygonFeature = function (arg) {
                                            polygonItemCoordIndex,
                                            item, itemIndex));
           polygonItemCoordIndex += 1;
-          if (posInstance instanceof geo.latlng) {
-            extRing[intIndex + 1].push({x: posInstance.x(), y: posInstance.y()});
-          } else {
-            extRing[intIndex + 1].push({x: posInstance.x, y: posInstance.y});
-          }
+          extRing[intIndex + 1].push({x: posInstance.x, y: posInstance.y});
         });
         intIndex += 1;
       });

@@ -26,9 +26,9 @@ window.startTest = function (done) {
   }
 
   layer.createFeature('plane')
-    .origin(geo.latlng(0.0, 0.0))
-    .upperLeft(geo.latlng(1.0, 0.0))
-    .lowerRight(geo.latlng(0.0, 2.0))
+    .origin({x: 0.0, y: 0.0})
+    .upperLeft({x: 1.0, y: 0.0})
+    .lowerRight({x: 0.0, y: 2.0})
     .style('image', '/data/land_shallow_topo_2048.png');
   myMap.draw();
 

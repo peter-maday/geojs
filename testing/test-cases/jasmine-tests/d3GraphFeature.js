@@ -15,17 +15,17 @@ describe("d3 graph feature", function () {
 
   it("Add features to a layer", function () {
     var selection, nodes;
-    
+
     nodes = [
-      geo.latlng(0, 0),
-      geo.latlng(10, 0),
-      geo.latlng(-10, 0),
-      geo.latlng(10, 10)
+      {x: 0, y: 0},
+      {x: 10, y: 0},
+      {x:-10, y: 0},
+      {x: 10, y: 10}
     ];
 
     nodes[0].children = [nodes[1], nodes[2]];
     nodes[1].children = [nodes[3]];
-        
+
     feature = layer.createFeature("graph")
       .data(nodes)
       .draw();

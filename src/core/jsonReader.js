@@ -114,7 +114,7 @@ geo.jsonReader = function (arg) {
       }
 
       // special handling for single point coordinates
-      return [geo.latlng(coordinates[1], coordinates[0], elv)];
+      return [{x: coordinates[0], y: coordinates[1], z: elv}];
     }
 
     // need better handling here, but we can plot simple polygons
@@ -123,9 +123,9 @@ geo.jsonReader = function (arg) {
       coordinates = coordinates[0];
     }
 
-    // return an array of latlng's for LineString, MultiPoint, etc...
+    // return an array of coordinates's for LineString, MultiPoint, etc...
     return coordinates.map(function (c) {
-      return geo.latlng(c[1], c[0], c[2]);
+      return {x: c[0], y: c[1], z: c[2]};
     });
   };
 

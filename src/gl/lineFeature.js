@@ -155,11 +155,7 @@ geo.gl.lineFeature = function (arg) {
       lineSegments.push(lineItem.length);
       lineItem.forEach(function (lineItemData) {
         pos = posFunc(lineItemData, lineItemIndex, item, itemIndex);
-        if (pos instanceof geo.latlng) {
-          position.push([pos.x(), pos.y(), 0.0]);
-        } else {
-          position.push([pos.x, pos.y, pos.z || 0.0]);
-        }
+        position.push([pos.x, pos.y, pos.z || 0.0]);
         strkWidthArr.push(strkWidthFunc(lineItemData, lineItemIndex,
                                         item, itemIndex));
         strkColor = strkColorFunc(lineItemData, lineItemIndex,

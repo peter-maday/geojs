@@ -5,9 +5,9 @@ window.startTest = function (done) {
   window.gjsmap = myMap;
   var layer2 = myMap.createLayer('feature');
   layer2.createFeature('plane')
-    .origin(geo.latlng(-90.0, -180.0))
-    .upperLeft(geo.latlng(90.0, -180.0))
-    .lowerRight(geo.latlng(-90.0, 180.0))
+    .origin({x: -90.0, y: -180.0})
+    .upperLeft({x: 90.0, y: -180.0})
+    .lowerRight({x: -90.0, y: 180.0})
     .style('image', '/data/land_shallow_topo_2048.png');
   layer2.name = 'layer2';
   myMap.center({x: -40, y: 0});
