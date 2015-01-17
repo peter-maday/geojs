@@ -37,7 +37,10 @@ geo.map = function (arg) {
       m_interactor = null,
       m_validZoomRange = { min: 0, max: 16 },
       m_transition = null,
-      m_clock = null;
+      m_queuedTransition = null,
+      m_clock = null,
+      m_bounds = {},
+      m_zoomCallback = null;
 
 
   arg.center = geo.util.normalizeCoordinates(arg.center);
@@ -125,10 +128,16 @@ geo.map = function (arg) {
       x: m_center.x - previousCenter.x,
       y: m_center.y - previousCenter.y
     };
+    m_this._updateBounds();
 
     m_this.children().forEach(function (child) {
       child.geoTrigger(geo.event.zoom, evt, true);
     });
+
+    m_this.modified();
+    if (m_zoomCallback) {
+      m_zoomCallback();
+    }
     return m_this;
   };
 
@@ -137,6 +146,7 @@ geo.map = function (arg) {
    * Pan the map by (x: dx, y: dy) pixels.
    *
    * @param {Object} delta
+   * @param {bool?} force Disable bounds clamping
    * @returns {geo.map}
    */
   ////////////////////////////////////////////////////////////////////////////
@@ -163,6 +173,8 @@ geo.map = function (arg) {
       x: m_width / 2,
       y: m_height / 2
     });
+    m_this._updateBounds();
+
     m_this.children().forEach(function (child) {
       child.geoTrigger(geo.event.pan, evt, true);
     });
@@ -196,7 +208,7 @@ geo.map = function (arg) {
     m_this.pan({
       x: currentCenter.x - newCenter.x,
       y: currentCenter.y - newCenter.y
-    });
+    }, true);
 
     return m_this;
   };
@@ -326,7 +338,13 @@ geo.map = function (arg) {
       height: h
     });
 
+    m_this._updateBounds();
     m_this.modified();
+
+    if (m_zoomCallback) {
+      m_zoomCallback();
+    }
+
     return m_this;
   };
 
@@ -416,6 +434,7 @@ geo.map = function (arg) {
       m_zoom = null;
       m_this.zoom(save);
 
+      m_this._updateBounds();
       return m_this;
     }
     return m_baseLayer;
@@ -618,23 +637,30 @@ geo.map = function (arg) {
   /**
    * Start an animated zoom/pan.
    *
-   * Options: ::
-   *
+   * Options:
+   * <pre>
    *   opts = {
    *     center: { x: ... , y: ... } // the new center
    *     zoom: ... // the new zoom level
    *     duration: ... // the duration (in ms) of the transition
    *     ease: ... // an easing function [0, 1] -> [0, 1]
    *   }
+   * </pre>
    *
-   * @param {Object} opts
+   * Call with no arguments to return the current transition information.
+   *
+   * @param {object?} opts
    * @returns {geo.map}
    */
   ////////////////////////////////////////////////////////////////////////////
   this.transition = function (opts) {
+
+    if (opts === undefined) {
+      return m_transition;
+    }
+
     if (m_transition) {
-      console.log("Cannot start a transition until the" +
-                  " current transition is finished");
+      m_queuedTransition = opts;
       return m_this;
     }
 
@@ -687,7 +713,8 @@ geo.map = function (arg) {
       },
       ease: defaultOpts.ease,
       zCoord: defaultOpts.zCoord,
-      done: defaultOpts.done
+      done: defaultOpts.done,
+      duration: defaultOpts.duration
     };
 
     if (defaultOpts.zCoord) {
@@ -719,18 +746,34 @@ geo.map = function (arg) {
     }
 
     function anim(time) {
-      var done = m_transition.done;
+      var done = m_transition.done, next;
+      next = m_queuedTransition;
+
       if (!m_transition.start.time) {
         m_transition.start.time = time;
         m_transition.end.time = time + defaultOpts.duration;
       }
-      if (time >= m_transition.end.time) {
-        m_this.center(m_transition.end.center);
-        m_this.zoom(m_transition.end.zoom);
+      m_transition.time = time - m_transition.start.time;
+      if (time >= m_transition.end.time || next) {
+        if (!next) {
+          m_this.center(m_transition.end.center);
+          m_this.zoom(m_transition.end.zoom);
+        }
+
         m_transition = null;
+
+        m_this.geoTrigger(geo.event.transitionend, defaultOpts);
+
         if (done) {
           done();
         }
+
+        if (next) {
+          console.log(next);
+          m_queuedTransition = null;
+          m_this.transition(next);
+        }
+
         return;
       }
 
@@ -751,9 +794,80 @@ geo.map = function (arg) {
       window.requestAnimationFrame(anim);
     }
 
-    window.requestAnimationFrame(anim);
+    m_this.geoTrigger(geo.event.transitionstart, defaultOpts);
+
+    if (defaultOpts.cancelNavigation) {
+      m_this.geoTrigger(geo.event.transitionend, defaultOpts);
+      return m_this;
+    } else if (defaultOpts.cancelAnimation) {
+      // run the navigation synchronously
+      defaultOpts.duration = 0;
+      anim(0);
+    } else {
+      window.requestAnimationFrame(anim);
+    }
     return m_this;
   };
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Update the internally cached map bounds.
+   * @private
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this._updateBounds = function () {
+    if (!m_this.baseLayer()) {
+      m_bounds = {};
+      return;
+    }
+    m_bounds.lowerLeft = m_this.displayToGcs({
+      x: 0,
+      y: m_height
+    });
+    m_bounds.lowerRight = m_this.displayToGcs({
+      x: m_width,
+      y: m_height
+    });
+    m_bounds.upperLeft = m_this.displayToGcs({
+      x: 0,
+      y: 0
+    });
+    m_bounds.upperRight = m_this.displayToGcs({
+      x: m_width,
+      y: 0
+    });
+  };
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Get the locations of the current map corners as latitudes/longitudes.
+   * The return value of this function is an object as follows: ::
+   *
+   *    {
+   *        lowerLeft: {x: ..., y: ...},
+   *        upperLeft: {x: ..., y: ...},
+   *        lowerRight: {x: ..., y: ...},
+   *        upperRight: {x: ..., y: ...}
+   *    }
+   *
+   * @todo Provide a setter
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.bounds = function () {
+    return m_bounds;
+  };
+
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * @todo Move spring and momentum to map and avoid this abomination
+   * @private
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this._zoomCallback = function (callback) {
+    m_zoomCallback = callback;
+  };
+
 
   this.interactor(arg.interactor || geo.mapInteractor());
   this.clock(arg.clock || geo.clock());
