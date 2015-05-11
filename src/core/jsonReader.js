@@ -4,7 +4,8 @@
  * Create a new instance of class jsonReader
  *
  * @class
- * @returns {geo.fileReader}
+ * @extends geo.fileReader
+ * @returns {geo.jsonReader}
  */
 //////////////////////////////////////////////////////////////////////////////
 geo.jsonReader = function (arg) {
@@ -14,6 +15,13 @@ geo.jsonReader = function (arg) {
   }
 
   var m_this = this, m_style = arg.style || {};
+  m_style = $.extend({
+      'strokeWidth': 2,
+      'strokeColor': {r: 0, g: 0, b: 0},
+      'strokeOpacity': 1,
+      'fillColor': {r: 1, g: 0, b: 0},
+      'fillOpacity': 1
+    }, m_style);
 
   geo.fileReader.call(this, arg);
 
@@ -125,18 +133,16 @@ geo.jsonReader = function (arg) {
 
     // return an array of coordinates's for LineString, MultiPoint, etc...
     return coordinates.map(function (c) {
-      return {x: c[0], y: c[1], z: c[2]};
+      return {
+        x: c[0],
+        y: c[1],
+        z: c[2]
+      };
     });
   };
 
   this._getStyle = function (spec) {
-    return $.extend({
-      'strokeWidth': 2,
-      'strokeColor': {r: 0, g: 0, b: 0},
-      'strokeOpacity': 1,
-      'fillColor': {r: 1, g: 0, b: 0},
-      'fillOpacity': 1
-    }, spec.properties);
+    return spec.properties;
   };
 
   this.read = function (file, done, progress) {
@@ -153,17 +159,32 @@ geo.jsonReader = function (arg) {
         if (type) {
           if (type === 'line') {
             style.fill = style.fill || false;
-            allFeatures.push(m_this._addFeature(type, [coordinates], style));
+            allFeatures.push(m_this._addFeature(
+              type,
+              [coordinates],
+              style,
+              feature.properties
+            ));
           } else if (type === 'point') {
             style.stroke = style.stroke || false;
-            allFeatures.push(m_this._addFeature(type, coordinates, style));
+            allFeatures.push(m_this._addFeature(
+              type,
+              coordinates,
+              style,
+              feature.properties
+            ));
           } else if (type === 'polygon') {
             style.fill = style.fill === undefined ? true : style.fill;
             style.fillOpacity = (
               style.fillOpacity === undefined ? 0.25 : style.fillOpacity
             );
             // polygons not yet supported
-            allFeatures.push(m_this._addFeature('line', [coordinates], style));
+            allFeatures.push(m_this._addFeature(
+              'line',
+              [coordinates],
+              style,
+              feature.properties
+            ));
           }
         } else {
           console.log('unsupported feature type: ' + feature.geometry.type);
@@ -178,18 +199,41 @@ geo.jsonReader = function (arg) {
     m_this._readObject(file, _done, progress);
   };
 
-  this._addFeature = function (type, coordinates, style) {
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Build the data array for a feature given the coordinates and properties
+   * from the geojson.
+   *
+   * @private
+   * @param {Object[]} coordinates Coordinate data array
+   * @param {Object} properties Geojson properties object
+   * @param {Object} style Global style defaults
+   * @returns {Object[]}
+   */
+  //////////////////////////////////////////////////////////////////////////////
+  this._buildData = function (coordinates, properties, style) {
+    return coordinates.map(function (coord) {
+      return {
+        coordinates: coord,
+        properties: properties,
+        style: style
+      };
+    });
+  };
+
+  this._addFeature = function (type, coordinates, style, properties) {
     var _style = $.extend({}, m_style, style);
-    return m_this.layer().createFeature(type)
-      .data(coordinates)
-      .position(function (d) {
-        return {
-          x: d.x(),
-          y: d.y(),
-          z: d.z() || 0
-        };
-      })
+    var feature = m_this.layer().createFeature(type)
+      .data(m_this._buildData(coordinates, properties, style))
       .style(_style);
+
+    if (type === 'line') {
+      feature.line(function (d) { return d.coordinates; });
+    } else {
+      feature.position(function (d) { return d.coordinates; });
+    }
+    return feature;
   };
 
 };

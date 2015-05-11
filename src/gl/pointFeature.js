@@ -3,6 +3,7 @@
  * Create a new instance of pointFeature
  *
  * @class
+ * @extends geo.pointFeature
  * @returns {geo.gl.pointFeature}
  */
 //////////////////////////////////////////////////////////////////////////////
@@ -20,112 +21,171 @@ geo.gl.pointFeature = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   var m_this = this,
+      s_exit = this._exit,
       m_actor = null,
+      m_mapper = null,
       m_pixelWidthUniform = null,
       m_aspectUniform = null,
+      m_dynamicDraw = arg.dynamicDraw === undefined ? false : arg.dynamicDraw,
+      m_primitiveShape = "sprite", // arg can change this, below
       s_init = this._init,
-      s_update = this._update;
+      s_update = this._update,
+      vertexShaderSource = null,
+      fragmentShaderSource = null;
 
-  var vertexShaderSource = [
-      "attribute vec3 pos;",
+  if (arg.primitiveShape === "triangle" ||
+      arg.primitiveShape === "square" ||
+      arg.primitiveShape === "sprite") {
+    m_primitiveShape = arg.primitiveShape;
+  }
+
+  vertexShaderSource = [
+    "#ifdef GL_ES",
+    "  precision highp float;",
+    "#endif",
+    "attribute vec3 pos;",
+    "attribute float rad;",
+    "attribute vec3 fillColor;",
+    "attribute vec3 strokeColor;",
+    "attribute float fillOpacity;",
+    "attribute float strokeWidth;",
+    "attribute float strokeOpacity;",
+    "attribute float fill;",
+    "attribute float stroke;",
+    "uniform float pixelWidth;",
+    "uniform float aspect;",
+    "uniform mat4 modelViewMatrix;",
+    "uniform mat4 projectionMatrix;",
+    "varying vec4 fillColorVar;",
+    "varying vec4 strokeColorVar;",
+    "varying float radiusVar;",
+    "varying float strokeWidthVar;",
+    "varying float fillVar;",
+    "varying float strokeVar;"
+  ];
+
+  if (m_primitiveShape !== "sprite") {
+    vertexShaderSource = vertexShaderSource.concat([
       "attribute vec2 unit;",
-      "attribute float rad;",
-      "attribute vec3 fillColor;",
-      "attribute vec3 strokeColor;",
-      "attribute float fillOpacity;",
-      "attribute float strokeWidth;",
-      "attribute float strokeOpacity;",
-      "attribute float fill;",
-      "attribute float stroke;",
-      "uniform float pixelWidth;",
-      "uniform float aspect;",
-      "uniform mat4 modelViewMatrix;",
-      "uniform mat4 projectionMatrix;",
-      "varying vec3 unitVar;",
-      "varying vec4 fillColorVar;",
-      "varying vec4 strokeColorVar;",
-      "varying float radiusVar;",
-      "varying float strokeWidthVar;",
-      "varying float fillVar;",
-      "varying float strokeVar;",
-      "void main(void)",
-      "{",
-      "  unitVar = vec3 (unit, 1.0);",
-      "  fillColorVar = vec4 (fillColor, fillOpacity);",
-      "  strokeColorVar = vec4 (strokeColor, strokeOpacity);",
-      "  strokeWidthVar = strokeWidth;",
-      "  fillVar = fill;",
-      "  strokeVar = stroke;",
-      "  radiusVar = rad;",
-      "  vec4 p = (projectionMatrix * modelViewMatrix * vec4(pos, 1.0)).xyzw;",
-      "  if (p.w != 0.0) {",
-      "    p = p/p.w;",
-      "  }",
-      "  p += (rad + strokeWidth) * ",
-      "vec4 (unit.x * pixelWidth, unit.y * pixelWidth * aspect, 0.0, 1.0);",
-      "  gl_Position = vec4(p.xyz, 1.0);",
+      "varying vec3 unitVar;"
+    ]);
+  }
+
+  vertexShaderSource.push.apply(vertexShaderSource, [
+    "void main(void)",
+    "{",
+    "  strokeWidthVar = strokeWidth;",
+    "  // No stroke or fill implies nothing to draw",
+    "  if (stroke < 1.0 || strokeWidth <= 0.0 || strokeOpacity <= 0.0) {",
+    "    strokeVar = 0.0;",
+    "    strokeWidthVar = 0.0;",
+    "  }",
+    "  else",
+    "    strokeVar = 1.0;",
+    "  if (fill < 1.0 || rad <= 0.0 || fillOpacity <= 0.0)",
+    "    fillVar = 0.0;",
+    "  else",
+    "    fillVar = 1.0;",
+    /* If the point has no visible pixels, skip doing computations on it. */
+    "  if (fillVar == 0.0 && strokeVar == 0.0) {",
+    "    gl_Position = vec4(2, 2, 0, 1);",
+    "    return;",
+    "  }",
+    "  fillColorVar = vec4 (fillColor, fillOpacity);",
+    "  strokeColorVar = vec4 (strokeColor, strokeOpacity);",
+    "  radiusVar = rad;"
+  ]);
+
+  if (m_primitiveShape === "sprite") {
+    vertexShaderSource.push.apply(vertexShaderSource, [
+      "  gl_Position = (projectionMatrix * modelViewMatrix * vec4(pos, 1.0)).xyzw;",
+      "  gl_PointSize = 2.0 * (rad + strokeWidthVar); ",
       "}"
-    ].join("\n");
+    ]);
+  } else {
+    vertexShaderSource.push.apply(vertexShaderSource, [
+        "  unitVar = vec3 (unit, 1.0);",
+        "  vec4 p = (projectionMatrix * modelViewMatrix * vec4(pos, 1.0)).xyzw;",
+        "  if (p.w != 0.0) {",
+        "    p = p / p.w;",
+        "  }",
+        "  p += (rad + strokeWidthVar) * ",
+        "       vec4 (unit.x * pixelWidth, unit.y * pixelWidth * aspect, 0.0, 1.0);",
+        "  gl_Position = vec4(p.xyz, 1.0);",
+        "}"
+      ]);
+  }
+  vertexShaderSource = vertexShaderSource.join("\n");
+
+  fragmentShaderSource = [
+    "#ifdef GL_ES",
+    "  precision highp float;",
+    "#endif",
+    "uniform float aspect;",
+    "varying vec4 fillColorVar;",
+    "varying vec4 strokeColorVar;",
+    "varying float radiusVar;",
+    "varying float strokeWidthVar;",
+    "varying float fillVar;",
+    "varying float strokeVar;"
+  ];
+
+  if (m_primitiveShape !== "sprite") {
+    fragmentShaderSource.push("varying vec3 unitVar;");
+  }
+
+  fragmentShaderSource.push.apply(fragmentShaderSource, [
+    "void main () {",
+    "  vec4 strokeColor, fillColor;",
+    "  float endStep;",
+    "  // No stroke or fill implies nothing to draw",
+    "  if (fillVar == 0.0 && strokeVar == 0.0)",
+    "    discard;"
+  ]);
+
+  if (m_primitiveShape === "sprite") {
+    fragmentShaderSource.push(
+      "  float rad = 2.0 * length (gl_PointCoord - vec2(0.5));");
+  } else {
+    fragmentShaderSource.push(
+      "  float rad = length (unitVar.xy);");
+  }
+
+  fragmentShaderSource.push.apply(fragmentShaderSource, [
+    "  if (rad > 1.0)",
+    "    discard;",
+    "  // If there is no stroke, the fill region should transition to nothing",
+    "  if (strokeVar == 0.0) {",
+    "    strokeColor = vec4 (fillColorVar.rgb, 0.0);",
+    "    endStep = 1.0;",
+    "  } else {",
+    "    strokeColor = strokeColorVar;",
+    "    endStep = radiusVar / (radiusVar + strokeWidthVar);",
+    "  }",
+    "  // Likewise, if there is no fill, the stroke should transition to nothing",
+    "  if (fillVar == 0.0)",
+    "    fillColor = vec4 (strokeColor.rgb, 0.0);",
+    "  else",
+    "    fillColor = fillColorVar;",
+    "  // Distance to antialias over",
+    "  float antialiasDist = 3.0 / (2.0 * radiusVar);",
+    "  if (rad < endStep) {",
+    "    float step = smoothstep (endStep - antialiasDist, endStep, rad);",
+    "    gl_FragColor = mix (fillColor, strokeColor, step);",
+    "  } else {",
+    "    float step = smoothstep (1.0 - antialiasDist, 1.0, rad);",
+    "    gl_FragColor = mix (strokeColor, vec4 (strokeColor.rgb, 0.0), step);",
+    "  }",
+    "}"
+  ]);
+
+  fragmentShaderSource = fragmentShaderSource.join("\n");
 
   function createVertexShader() {
     var shader = new vgl.shader(gl.VERTEX_SHADER);
-
     shader.setShaderSource(vertexShaderSource);
     return shader;
   }
-
-  var fragmentShaderSource = [
-      "#ifdef GL_ES",
-      "  precision highp float;",
-      "#endif",
-      "uniform float aspect;",
-      "varying vec3 unitVar;",
-      "varying vec4 fillColorVar;",
-      "varying vec4 strokeColorVar;",
-      "varying float radiusVar;",
-      "varying float strokeWidthVar;",
-      "varying float fillVar;",
-      "varying float strokeVar;",
-      "bool to_bool (in float value) {",
-      "  if (value < 1.0)",
-      "    return false;",
-      "  else",
-      "    return true;",
-      "}",
-      "void main () {",
-      "  bool fill = to_bool (fillVar);",
-      "  bool stroke = to_bool (strokeVar);",
-      "  vec4 strokeColor, fillColor;",
-      "  // No stroke or fill implies nothing to draw",
-      "  if (!fill && !stroke)",
-      "    discard;",
-      "  // Get normalized texture coordinates and polar r coordinate",
-      "  vec2 tex = (unitVar.xy + 1.0) / 2.0;",
-      "  float rad = length (unitVar.xy);",
-      "  // If there is no stroke, the fill region should transition to nothing",
-      "  if (!stroke)",
-      "    strokeColor = vec4 (fillColorVar.rgb, 0.0);",
-      "  else",
-      "    strokeColor = strokeColorVar;",
-      "  // Likewise, if there is no fill, the stroke should transition to nothing",
-      "  if (!fill)",
-      "    fillColor = vec4 (strokeColor.rgb, 0.0);",
-      "  else",
-      "    fillColor = fillColorVar;",
-      "  float radiusWidth = radiusVar;",
-      "  // Distance to antialias over",
-      "  float antialiasDist = 3.0 / (2.0 * radiusVar);",
-      "  if (rad < (radiusWidth / (radiusWidth + strokeWidthVar))) {",
-      "    float endStep = radiusWidth / (radiusWidth + strokeWidthVar);",
-      "    float step = smoothstep (endStep - antialiasDist, endStep, rad);",
-      "    gl_FragColor = mix (fillColor, strokeColor, step);",
-      "  }",
-      "  else {",
-      "    float step = smoothstep (1.0 - antialiasDist, 1.0, rad);",
-      "    gl_FragColor = mix (strokeColor, vec4 (strokeColor.rgb, 0.0), step);",
-      "  }",
-      "}"
-    ].join("\n");
 
   function createFragmentShader() {
     var shader = new vgl.shader(gl.FRAGMENT_SHADER);
@@ -133,46 +193,202 @@ geo.gl.pointFeature = function (arg) {
     return shader;
   }
 
-  var rect = function (x, y, w, h) {
-    var verts = [
-        x - w, y + h,
-        x - w, y - h,
-        x + w, y + h,
-        x - w, y - h,
-        x + w, y - h,
-        x + w, y + h
-      ];
+  function pointPolygon(x, y, w, h) {
+    var verts;
+    switch (m_primitiveShape) {
+      case "triangle":
+        /* Use an equilateral triangle.  While this has 30% more area than a
+         * square, the reduction in vertices should help more than the
+         * processing the additional fragments. */
+        verts = [
+          x, y - h * 2,
+          x - w * Math.sqrt(3.0), y + h,
+          x + w * Math.sqrt(3.0), y + h
+        ];
+        break;
+      case "sprite":
+        /* Point sprite uses only one vertex per point. */
+        verts = [x, y];
+        break;
+      default: // "square"
+        /* Use a surrounding square split diagonally into two triangles. */
+        verts = [
+          x - w, y + h,
+          x - w, y - h,
+          x + w, y + h,
+          x - w, y - h,
+          x + w, y - h,
+          x + w, y + h
+        ];
+        break;
+    }
     return verts;
-  };
+  }
 
   function createGLPoints() {
-    var i, numPts = m_this.data().length,
-        start, unit = rect(0, 0, 1, 1),
-        position = [], radius = [], strokeWidth = [],
-        fillColor = [], fill = [], strokeColor = [], stroke = [],
-        fillOpacity = [], strokeOpacity = [], posFunc, radFunc, strokeWidthFunc,
-        fillColorFunc, fillFunc, strokeColorFunc, strokeFunc, fillOpacityFunc,
-        strokeOpactityFunc, buffers = vgl.DataBuffers(1024),
-        sourcePositions = vgl.sourceDataP3fv(),
-        sourceUnits = vgl.sourceDataAnyfv(2, vgl.vertexAttributeKeysIndexed.One),
-        sourceRadius = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Two),
-        sourceStokeWidth = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Three),
-        sourceFillColor = vgl.sourceDataAnyfv(3, vgl.vertexAttributeKeysIndexed.Four),
-        sourceFill = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Five),
-        sourceStrokeColor = vgl.sourceDataAnyfv(3, vgl.vertexAttributeKeysIndexed.Six),
-        sourceStroke = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Seven),
-        sourceAlpha = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Eight),
-        sourceStrokeOpacity = vgl.sourceDataAnyfv(1, vgl.vertexAttributeKeysIndexed.Nine),
-        trianglesPrimitive = vgl.triangles(),
-        mat = vgl.material(),
-        blend = vgl.blend(),
-        prog = vgl.shaderProgram(),
+    // unit and associated data is not used when drawing sprite
+    var i, j, numPts = m_this.data().length,
+        unit = pointPolygon(0, 0, 1, 1),
+        position = new Array(numPts * 3), posBuf, posVal, posFunc,
+        unitBuf, indices,
+        radius, radiusVal, radFunc,
+        stroke, strokeVal, strokeFunc,
+        strokeWidth, strokeWidthVal, strokeWidthFunc,
+        strokeOpacity, strokeOpacityVal, strokeOpactityFunc,
+        strokeColor, strokeColorVal, strokeColorFunc,
+        fill, fillVal, fillFunc,
+        fillOpacity, fillOpacityVal, fillOpacityFunc,
+        fillColor, fillColorVal, fillColorFunc,
+        vpf = m_this.verticesPerFeature(),
+        data = m_this.data(),
+        item, ivpf, ivpf3, iunit, i3,
+        geom = m_mapper.geometryData();
+
+    posFunc = m_this.position();
+    radFunc = m_this.style.get("radius");
+    strokeFunc = m_this.style.get("stroke");
+    strokeWidthFunc = m_this.style.get("strokeWidth");
+    strokeOpactityFunc = m_this.style.get("strokeOpacity");
+    strokeColorFunc = m_this.style.get("strokeColor");
+    fillFunc = m_this.style.get("fill");
+    fillOpacityFunc = m_this.style.get("fillOpacity");
+    fillColorFunc = m_this.style.get("fillColor");
+
+    /* It is more efficient to do a transform on a single array rather than on
+     * an array of arrays or an array of objects. */
+    for (i = i3 = 0; i < numPts; i += 1, i3 += 3) {
+      posVal = posFunc(data[i]);
+      position[i3]     = posVal.x;
+      position[i3 + 1] = posVal.y;
+      position[i3 + 2] = posVal.z || 0;
+    }
+    position = geo.transform.transformCoordinates(
+                  m_this.gcs(), m_this.layer().map().gcs(),
+                  position, 3);
+
+    posBuf        = getBuffer(geom, "pos", vpf * numPts * 3);
+
+    if (m_primitiveShape !== "sprite") {
+      unitBuf       = getBuffer(geom, "unit", vpf * numPts * 2);
+    }
+
+    radius        = getBuffer(geom, "rad", vpf * numPts * 1);
+    stroke        = getBuffer(geom, "stroke", vpf * numPts * 1);
+    strokeWidth   = getBuffer(geom, "strokeWidth", vpf * numPts * 1);
+    strokeOpacity = getBuffer(geom, "strokeOpacity", vpf * numPts * 1);
+    strokeColor   = getBuffer(geom, "strokeColor", vpf * numPts * 3);
+    fill          = getBuffer(geom, "fill", vpf * numPts * 1);
+    fillOpacity   = getBuffer(geom, "fillOpacity", vpf * numPts * 1);
+    fillColor     = getBuffer(geom, "fillColor", vpf * numPts * 3);
+    indices = geom.primitive(0).indices();
+    if (!(indices instanceof Uint16Array) || indices.length !== vpf * numPts) {
+      indices = new Uint16Array(vpf * numPts);
+      geom.primitive(0).setIndices(indices);
+    }
+
+    for (i = ivpf = ivpf3 = iunit = i3 = 0; i < numPts; i += 1, i3 += 3) {
+      item = data[i];
+      if (m_primitiveShape !== "sprite") {
+        for (j = 0; j < unit.length; j += 1, iunit += 1) {
+          unitBuf[iunit] = unit[j];
+        }
+      }
+      /* We can ignore the indicies (they will all be zero) */
+      radiusVal = radFunc(item);
+      strokeVal = strokeFunc(item) ? 1.0 : 0.0;
+      strokeWidthVal = strokeWidthFunc(item);
+      strokeOpacityVal = strokeOpactityFunc(item);
+      strokeColorVal = strokeColorFunc(item);
+      fillVal = fillFunc(item) ? 1.0 : 0.0;
+      fillOpacityVal = fillOpacityFunc(item);
+      fillColorVal = fillColorFunc(item);
+      for (j = 0; j < vpf; j += 1, ivpf += 1, ivpf3 += 3) {
+        posBuf[ivpf3]     = position[i3];
+        posBuf[ivpf3 + 1] = position[i3 + 1];
+        posBuf[ivpf3 + 2] = position[i3 + 2];
+        radius[ivpf] = radiusVal;
+        stroke[ivpf] = strokeVal;
+        strokeWidth[ivpf] = strokeWidthVal;
+        strokeOpacity[ivpf] = strokeOpacityVal;
+        strokeColor[ivpf3]     = strokeColorVal.r;
+        strokeColor[ivpf3 + 1] = strokeColorVal.g;
+        strokeColor[ivpf3 + 2] = strokeColorVal.b;
+        fill[ivpf] = fillVal;
+        fillOpacity[ivpf] = fillOpacityVal;
+        fillColor[ivpf3]     = fillColorVal.r;
+        fillColor[ivpf3 + 1] = fillColorVal.g;
+        fillColor[ivpf3 + 2] = fillColorVal.b;
+      }
+    }
+
+    geom.boundsDirty(true);
+    m_mapper.modified();
+    m_mapper.boundsDirtyTimestamp().modified();
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Get a buffer for a geometry source.  If a buffer already exists and is
+   * the correct size, return it.  Otherwise, allocate a new buffer; any data
+   * in an old buffer is discarded.
+   *
+   * @param geom: the geometry to reference and modify.
+   * @param srcName: the name of the source.
+   * @param len: the number of elements for the array.
+   * @returns {Float32Array}
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  function getBuffer(geom, srcName, len) {
+    var src = geom.sourceByName(srcName), data;
+
+    data = src.data();
+    if (data instanceof Float32Array && data.length === len) {
+      return data;
+    }
+    data = new Float32Array(len);
+    src.setData(data);
+    return data;
+  }
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Return list of actors
+   *
+   * @returns {vgl.actor[]}
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.actors = function () {
+    if (!m_actor) {
+      return [];
+    }
+    return [m_actor];
+  };
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Return the number of vertices used for each point.
+   *
+   * @returns {Number}
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this.verticesPerFeature = function () {
+    var unit = pointPolygon(0, 0, 1, 1);
+    return unit.length / 2;
+  };
+
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Initialize
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this._init = function () {
+    var prog = vgl.shaderProgram(),
         vertexShader = createVertexShader(),
         fragmentShader = createFragmentShader(),
         posAttr = vgl.vertexAttribute("pos"),
         unitAttr = vgl.vertexAttribute("unit"),
         radAttr = vgl.vertexAttribute("rad"),
-        stokeWidthAttr = vgl.vertexAttribute("strokeWidth"),
+        strokeWidthAttr = vgl.vertexAttribute("strokeWidth"),
         fillColorAttr = vgl.vertexAttribute("fillColor"),
         fillAttr = vgl.vertexAttribute("fill"),
         strokeColorAttr = vgl.vertexAttribute("strokeColor"),
@@ -181,64 +397,50 @@ geo.gl.pointFeature = function (arg) {
         strokeOpacityAttr = vgl.vertexAttribute("strokeOpacity"),
         modelViewUniform = new vgl.modelViewUniform("modelViewMatrix"),
         projectionUniform = new vgl.projectionUniform("projectionMatrix"),
+        mat = vgl.material(),
+        blend = vgl.blend(),
         geom = vgl.geometryData(),
-        mapper = vgl.mapper();
+        sourcePositions = vgl.sourceDataP3fv({"name": "pos"}),
+        sourceUnits = vgl.sourceDataAnyfv(
+            2, vgl.vertexAttributeKeysIndexed.One, {"name": "unit"}),
+        sourceRadius = vgl.sourceDataAnyfv(
+            1, vgl.vertexAttributeKeysIndexed.Two, {"name": "rad"}),
+        sourceStrokeWidth = vgl.sourceDataAnyfv(
+            1, vgl.vertexAttributeKeysIndexed.Three, {"name": "strokeWidth"}),
+        sourceFillColor = vgl.sourceDataAnyfv(
+            3, vgl.vertexAttributeKeysIndexed.Four, {"name": "fillColor"}),
+        sourceFill = vgl.sourceDataAnyfv(
+            1, vgl.vertexAttributeKeysIndexed.Five, {"name": "fill"}),
+        sourceStrokeColor = vgl.sourceDataAnyfv(
+            3, vgl.vertexAttributeKeysIndexed.Six, {"name": "strokeColor"}),
+        sourceStroke = vgl.sourceDataAnyfv(
+            1, vgl.vertexAttributeKeysIndexed.Seven, {"name": "stroke"}),
+        sourceAlpha = vgl.sourceDataAnyfv(
+            1, vgl.vertexAttributeKeysIndexed.Eight, {"name": "fillOpacity"}),
+        sourceStrokeOpacity = vgl.sourceDataAnyfv(
+            1, vgl.vertexAttributeKeysIndexed.Nine, {"name": "strokeOpacity"}),
+        primitive = new vgl.triangles();
+
+    if (m_primitiveShape === "sprite") {
+      primitive = new vgl.points();
+    }
 
     m_pixelWidthUniform = new vgl.floatUniform("pixelWidth",
                             2.0 / m_this.renderer().width());
     m_aspectUniform = new vgl.floatUniform("aspect",
                         m_this.renderer().width() / m_this.renderer().height());
 
-    posFunc = m_this.position();
-    radFunc = m_this.style.get("radius");
-    strokeWidthFunc = m_this.style.get("strokeWidth");
-    fillColorFunc = m_this.style.get("fillColor");
-    fillFunc = m_this.style.get("fill");
-    strokeColorFunc = m_this.style.get("strokeColor");
-    strokeFunc = m_this.style.get("stroke");
-    fillOpacityFunc = m_this.style.get("fillOpacity");
-    strokeOpactityFunc = m_this.style.get("strokeOpacity");
-
-    m_this.data().forEach(function (item) {
-      var p = posFunc(item), c;
-
-      position.push([p.x, p.y, p.z || 0]);
-      radius.push(radFunc(item));
-      strokeWidth.push(strokeWidthFunc(item));
-      fill.push(fillFunc(item) ? 1.0 : 0.0);
-
-      c = fillColorFunc(item);
-      fillColor.push([c.r, c.g, c.b]);
-
-      c = strokeColorFunc(item);
-      strokeColor.push([c.r, c.g, c.b]);
-
-      stroke.push(strokeFunc(item) ? 1.0 : 0.0);
-      fillOpacity.push(fillOpacityFunc(item));
-      strokeOpacity.push(strokeOpactityFunc(item));
-    });
-
-    position = geo.transform.transformCoordinates(
-                  m_this.gcs(), m_this.layer().map().gcs(),
-                  position, 3);
-
-    buffers.create("pos", 3);
-    buffers.create("indices", 1);
-    buffers.create("unit", 2);
-    buffers.create("rad", 1);
-    buffers.create("strokeWidth", 1);
-    buffers.create("fillColor", 3);
-    buffers.create("fill", 1);
-    buffers.create("strokeColor", 3);
-    buffers.create("stroke", 1);
-    buffers.create("fillOpacity", 1);
-    buffers.create("strokeOpacity", 1);
+    s_init.call(m_this, arg);
+    m_mapper = vgl.mapper({dynamicDraw: m_dynamicDraw});
 
     // TODO: Right now this is ugly but we will fix it.
     prog.addVertexAttribute(posAttr, vgl.vertexAttributeKeys.Position);
-    prog.addVertexAttribute(unitAttr, vgl.vertexAttributeKeysIndexed.One);
+    if (m_primitiveShape !== "sprite") {
+      prog.addVertexAttribute(unitAttr, vgl.vertexAttributeKeysIndexed.One);
+    }
+
     prog.addVertexAttribute(radAttr, vgl.vertexAttributeKeysIndexed.Two);
-    prog.addVertexAttribute(stokeWidthAttr, vgl.vertexAttributeKeysIndexed.Three);
+    prog.addVertexAttribute(strokeWidthAttr, vgl.vertexAttributeKeysIndexed.Three);
     prog.addVertexAttribute(fillColorAttr, vgl.vertexAttributeKeysIndexed.Four);
     prog.addVertexAttribute(fillAttr, vgl.vertexAttributeKeysIndexed.Five);
     prog.addVertexAttribute(strokeColorAttr, vgl.vertexAttributeKeysIndexed.Six);
@@ -259,68 +461,20 @@ geo.gl.pointFeature = function (arg) {
 
     m_actor = vgl.actor();
     m_actor.setMaterial(mat);
+    m_actor.setMapper(m_mapper);
 
-    start = buffers.alloc(6 * numPts);
-    for (i = 0; i < numPts; i += 1) {
-      buffers.repeat("pos", position[i],
-                      start + i * 6, 6);
-      buffers.write("unit", unit, start + i * 6, 6);
-      buffers.write("indices", [i], start + i, 1);
-      buffers.repeat("rad", [radius[i]], start + i * 6, 6);
-      buffers.repeat("strokeWidth", [strokeWidth[i]], start + i * 6, 6);
-      buffers.repeat("fillColor", fillColor[i], start + i * 6, 6);
-      buffers.repeat("fill", [fill[i]], start + i * 6, 6);
-      buffers.repeat("strokeColor", strokeColor[i], start + i * 6, 6);
-      buffers.repeat("stroke", [stroke[i]], start + i * 6, 6);
-      buffers.repeat("fillOpacity", [fillOpacity[i]], start + i * 6, 6);
-      buffers.repeat("strokeOpacity", [strokeOpacity[i]], start + i * 6, 6);
-    }
-
-    sourcePositions.pushBack(buffers.get("pos"));
     geom.addSource(sourcePositions);
-
-    sourceUnits.pushBack(buffers.get("unit"));
     geom.addSource(sourceUnits);
-
-    sourceRadius.pushBack(buffers.get("rad"));
     geom.addSource(sourceRadius);
-
-    sourceStokeWidth.pushBack(buffers.get("strokeWidth"));
-    geom.addSource(sourceStokeWidth);
-
-    sourceFillColor.pushBack(buffers.get("fillColor"));
+    geom.addSource(sourceStrokeWidth);
     geom.addSource(sourceFillColor);
-
-    sourceFill.pushBack(buffers.get("fill"));
     geom.addSource(sourceFill);
-
-    sourceStrokeColor.pushBack(buffers.get("strokeColor"));
     geom.addSource(sourceStrokeColor);
-
-    sourceStroke.pushBack(buffers.get("stroke"));
     geom.addSource(sourceStroke);
-
-    sourceAlpha.pushBack(buffers.get("fillOpacity"));
     geom.addSource(sourceAlpha);
-
-    sourceStrokeOpacity.pushBack(buffers.get("strokeOpacity"));
     geom.addSource(sourceStrokeOpacity);
-
-    trianglesPrimitive.setIndices(buffers.get("indices"));
-    geom.addPrimitive(trianglesPrimitive);
-
-    mapper.setGeometryData(geom);
-
-    m_actor.setMapper(mapper);
-  }
-
-  ////////////////////////////////////////////////////////////////////////////
-  /**
-   * Initialize
-   */
-  ////////////////////////////////////////////////////////////////////////////
-  this._init = function () {
-    s_init.call(m_this, arg);
+    geom.addPrimitive(primitive);
+    m_mapper.setGeometryData(geom);
   };
 
   ////////////////////////////////////////////////////////////////////////////
@@ -379,6 +533,7 @@ geo.gl.pointFeature = function (arg) {
   ////////////////////////////////////////////////////////////////////////////
   this._exit = function () {
     m_this.renderer().contextRenderer().removeActor(m_actor);
+    s_exit();
   };
 
   m_this._init();

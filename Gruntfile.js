@@ -32,17 +32,19 @@ module.exports = function (grunt) {
     core: moduleFiles('geo.core'),
     gl: moduleFiles('geo.gl'),
     d3: moduleFiles('geo.d3'),
-    ui: moduleFiles('geo.ui')
+    ui: moduleFiles('geo.ui'),
+    plugin: moduleFiles('geo.plugin')
   };
 
   sourceList = Array.prototype.concat(
-    vgl.files.map(function (f) { return 'src/vgl/' + f; }),
     geo.init,
+    vgl.files.map(function (f) { return 'src/vgl/' + f; }),
     geo.util,
     geo.core,
     geo.gl,
     geo.d3,
-    geo.ui
+    geo.ui,
+    geo.plugin
   );
 
   templateData = {
@@ -87,7 +89,8 @@ module.exports = function (grunt) {
               geo.core,
               geo.gl,
               geo.d3,
-              geo.ui
+              geo.ui,
+              geo.plugin
             ),
             dest: 'dist/',
             filter: 'isFile',
@@ -161,6 +164,16 @@ module.exports = function (grunt) {
             expand: true
           }
         ]
+      },
+      jqueryui: {
+        files: [
+          {
+            src: ['jquery-ui.min.js'],
+            dest: 'dist/examples/common/js',
+            cwd: 'bower_components/jquery-ui/',
+            expand: true
+          }
+        ]
       }
     },
 
@@ -179,12 +192,11 @@ module.exports = function (grunt) {
 
     uglify: {
       options: {
-        sourceMap: true,
-        sourceMapIncludeSources: true,
+        sourceMap: false,
         report: 'min',
         beautify: {
           ascii_only: true,
-          beautify: true
+          beautify: false
         },
         mangle: false
       },
@@ -201,7 +213,6 @@ module.exports = function (grunt) {
         files: {
           'dist/built/geo.ext.min.js': [
             'bower_components/jquery/dist/jquery.js',
-            'bower_components/jquery-mousewheel/jquery.mousewheel.js',
             'bower_components/gl-matrix/dist/gl-matrix.js',
             'bower_components/proj4/dist/proj4-src.js',
             'bower_components/d3/d3.js',
@@ -237,7 +248,7 @@ module.exports = function (grunt) {
           'Gruntfile.js',
           'sources.json'
         ],
-        tasks: ['clean:source', 'template', 'copy', 'uglify:geojs']
+        tasks: ['clean:source', 'template', 'copy', 'docs', 'uglify:geojs']
       },
       examples: {
         files: [
@@ -394,6 +405,7 @@ module.exports = function (grunt) {
     'copy:bootstrap',
     'copy:codemirror',
     'copy:examples',
+    'copy:jqueryui',
     'uglify:codemirror',
     'jade',
     'docco'
@@ -401,6 +413,8 @@ module.exports = function (grunt) {
 
   grunt.registerTask('library', [
     'template',
+    'copy:geo',
+    'copy:vgl',
     'concat:geojs',
     'uglify:geojs'
   ]);
@@ -409,22 +423,37 @@ module.exports = function (grunt) {
     'uglify:ext'
   ]);
 
-  grunt.registerTask('dev', [
-    'copy:geo',
-    'copy:vgl'
-  ]);
-
   grunt.registerTask('default', [
     'init',
-    'dev',
     'library',
     'examples'
   ]);
 
   grunt.registerTask(
-      'serve',
-      'Serve the content at http://localhost:8082, ' +
-      'use the --port option to override the default port',
-      ['express', 'watch']
+    'serve',
+    'Serve the content at http://localhost:8082, ' +
+    'use the --port option to override the default port',
+    ['express', 'watch']
+  );
+
+  grunt.registerTask(
+    'serve-test',
+    'Serve the content for testing.  This starts on port 50100 by ' +
+    'default and does not rebuild sources automatically.',
+    function () {
+      grunt.config.set('express.server.options.hostname', '0.0.0.0');
+      if (!grunt.option('port')) {
+        grunt.config.set('express.server.options.port', 50100);
+      }
+      // make sure express doesn't change the port
+      var test_port = grunt.config.get('express.server.options.port');
+      grunt.event.on('express:server:started', function () {
+        if (grunt.config.get('express.server.options.port') !== test_port) {
+          grunt.fail.fatal('Port ' + test_port + ' unavailable.');
+        }
+      });
+
+      grunt.task.run(['express', 'express-keepalive']);
+    }
   );
 };

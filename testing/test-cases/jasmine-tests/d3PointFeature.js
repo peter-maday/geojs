@@ -8,14 +8,14 @@ describe("d3 point feature", function () {
   it("Setup map", function () {
     map = geo.map({node: "#map", center: [0, 0], zoom: 3});
     map.createLayer("osm");
-    layer = map.createLayer("feature", {"renderer": "d3Renderer"});
+    layer = map.createLayer("feature", {"renderer": "d3"});
 
     map.resize(0, 0, width, height);
   });
 
   it("Add features to a layer", function () {
     var selection;
-    feature1 = layer.createFeature("point")
+    feature1 = layer.createFeature("point", {selectionAPI: true})
       .data([{x: 0, y: 0}, {x: 10, y: 0}, {x: 0, y: 10}])
       .draw();
 
@@ -35,6 +35,11 @@ describe("d3 point feature", function () {
 
     selection = d3.select("#map svg").selectAll("circle");
     expect(selection[0].length).toBe(6);
+  });
+
+  it("Validate selection API option", function () {
+    expect(feature1.selectionAPI()).toBe(true);
+    expect(feature2.selectionAPI()).toBe(false);
   });
 
   it("Remove a feature from a layer", function () {

@@ -5,7 +5,7 @@
  * <code>(x / a)^2 + (y / b)^2 + (z / c)^2 = 1</code>. Used
  * primarily to create planetary bodies
  *
- * @constructor
+ * @class
  * @param {Number} [x=0]  Radius in X direction
  * @param {Number} [y=0]  Radius in Y direction
  * @param {Number} [z=0]  Radius in Z direction
@@ -128,7 +128,7 @@ geo.ellipsoid = function (x, y, z) {
     vec3.multiply(k, m_radiiSquared, n);
     vec3.scale(k, k, 1 / gamma);
     vec3.scale(n, n, elev);
-    vec3.add(result, n,  k);
+    vec3.add(result, n, k);
     return result;
   };
 
@@ -182,7 +182,7 @@ geo.ellipsoid = function (x, y, z) {
       gamma = Math.sqrt(vec3.dot(n, k));
       vec3.scale(k, k, 1 / gamma);
       vec3.scale(n, n, sourceDataArray[index + 2]);
-      vec3.add(result, n,  k);
+      vec3.add(result, n, k);
 
       sourceDataArray[index] = result[0];
       sourceDataArray[index + 1] = result[1];

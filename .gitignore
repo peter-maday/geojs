@@ -2,10 +2,12 @@
 .DS_Store
 .*.swp
 /node_modules/*
+/bower_components/*
 .vimrc
 *.py[ocd]
 /docs/_*
 /docs/*.py
 !/docs/conf.py
+!/docs/parse.py
 /src/core/version.js
 /dist

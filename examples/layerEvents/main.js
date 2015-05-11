@@ -1,11 +1,11 @@
 // Run after the DOM loads
 $(function () {
   'use strict';
-  
+
   // Create an svg layer and return a reference to its dom element.
   function getSvgLayer(map, opts) {
 
-    opts.renderer = 'd3Renderer';
+    opts.renderer = 'd3';
     var layer = map.createLayer('feature', opts);
 
     // The canvas is a d3 context to geojs managed svg element.
@@ -57,7 +57,7 @@ $(function () {
 
   // Create the main svg layer.
   var svg = getSvgLayer(map, {}).svg;
- 
+
   // This is a helper function to create a box with a
   // uniform style that receives mouse events.
   function addEventBox(x, y, str) {
@@ -97,7 +97,7 @@ $(function () {
   // Add a blue box that blocks the mouse wheel.
   addEventBox(3 * width / 4, height / 2, 'Blocking wheel')
     .style('fill', 'steelblue')
-    .on('mousewheel', function () {
+    .on('wheel', function () {
       d3.event.stopPropagation();
     });
 

@@ -102,6 +102,7 @@ describe('mapInteractor', function () {
 
     var interactor = geo.mapInteractor({
       map: map,
+      momentum: {enabled: false},
       panMoveButton: 'left',
       panWheelEnabled: false,
       zoomMoveButton: null,
@@ -179,6 +180,7 @@ describe('mapInteractor', function () {
 
     var interactor = geo.mapInteractor({
       map: map,
+      momentum: {enabled: false},
       panMoveButton: null,
       panWheelEnabled: false,
       zoomMoveButton: null,
@@ -195,15 +197,16 @@ describe('mapInteractor', function () {
 
     // trigger a zoom
     interactor.simulateEvent(
-      'mousewheel',
+      'wheel',
       {
         wheelDelta: {x: 20, y: -10},
+        wheelMode: 0
       }
     );
 
     // check the zoom event was called
     expect(map.info.zoom).toBe(1);
-    expect(map.info.zoomArgs).toBe(2 - 10 / 120);
+    expect(map.info.zoomArgs).toBe(2 + 10 / 120);
   });
 
   it('Test zoom right click event propagation', function () {

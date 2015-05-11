@@ -43,16 +43,19 @@ vgl submodule. ::
 Building the source
 -------------------
 
-Inside the new ``geojs`` directory, you can simply run the following command to
+Inside the new ``geojs`` directory, you can simply run the following commands to
 install all dependent javascript libraries and bundle together everything that
 is needed. ::
 
     npm install
+    grunt
 
 Compiled javascript libraries will be named ``geo.min.js`` and ``geo.ext.min.js`` in ``dist/built``.
 The first file contains geojs and vgl bundled together.  The second file contains all
 of the dependent libraries.  The bundled libraries are minified, but source maps
 are provided
+
+.. _quick-start-guide:
 
 Using the library
 -----------------

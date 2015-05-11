@@ -29,6 +29,7 @@
         "pathFeature.js",
         "polygonFeature.js",
         "planeFeature.js",
+        "vectorFeature.js",
         "geomFeature.js",
         "graphFeature.js",
         "transform.js",
@@ -66,6 +67,7 @@
         "pathFeature.js",
         "graphFeature.js",
         "planeFeature.js",
+        "vectorFeature.js",
         "d3Renderer.js"
       ]
     },
@@ -77,6 +79,12 @@
         "widget.js",
         "sliderWidget.js",
         "legendWidget.js"
+      ]
+    },
+    "geo.plugin": {
+      "prefix": "src/plugin",
+      "files": [
+        "jquery-plugin.js"
       ]
     },
     "vgl": {

@@ -2,7 +2,8 @@
 /**
  * Create a new instance of class d3Renderer
  *
- * @param canvas
+ * @class
+ * @extends geo.renderer
  * @returns {geo.d3.d3Renderer}
  */
 //////////////////////////////////////////////////////////////////////////////
@@ -13,6 +14,9 @@ geo.d3.d3Renderer = function (arg) {
     return new geo.d3.d3Renderer(arg);
   }
   geo.renderer.call(this, arg);
+
+  var s_exit = this._exit;
+
   geo.d3.object.call(this, arg);
 
   arg = arg || {};
@@ -224,7 +228,6 @@ geo.d3.d3Renderer = function (arg) {
     m_dy = dy;
   }
 
-
   ////////////////////////////////////////////////////////////////////////////
   /**
    * Convert from screen pixel coordinates to the local coordinate system
@@ -419,8 +422,18 @@ geo.d3.d3Renderer = function (arg) {
   this._exit = function () {
     m_features = {};
     m_this.canvas().remove();
+    s_exit();
   };
 
+  ////////////////////////////////////////////////////////////////////////////
+  /**
+   * Get the definitions dom element for the layer
+   * @protected
+   */
+  ////////////////////////////////////////////////////////////////////////////
+  this._definitions = function () {
+    return m_defs;
+  };
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -530,4 +543,4 @@ geo.d3.d3Renderer = function (arg) {
 
 inherit(geo.d3.d3Renderer, geo.renderer);
 
-geo.registerRenderer('d3Renderer', geo.d3.d3Renderer);
+geo.registerRenderer('d3', geo.d3.d3Renderer);

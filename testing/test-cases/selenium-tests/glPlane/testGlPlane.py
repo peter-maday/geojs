@@ -10,9 +10,12 @@ class glPlaneBase(object):
     testCase = ('glPlane',)
     testRevision = 1
 
-    def loadPage(self):
+    def loadPage(self, opacity=None):
         self.resizeWindow(640, 480)
-        self.loadURL('glPlane/index.html')
+        if opacity is None:
+            self.loadURL('glPlane/index.html')
+        else:
+            self.loadURL('glPlane/index.html?opacity=' + str(opacity))
         self.wait()
 
     def testGlPlane(self):
@@ -21,13 +24,17 @@ class glPlaneBase(object):
         testName = 'drawGlPlane'
         self.screenshotTest(testName)
 
+    def testGlPlaneOpacity(self):
+        self.loadPage(0.4)
 
-@unittest.skip("Initial zoom currently not working")
+        testName = 'drawGlPlaneOpacity'
+        self.screenshotTest(testName)
+
+
 class FirefoxOSM(glPlaneBase, FirefoxTest):
     testCase = glPlaneBase.testCase + ('firefox',)
 
 
-@unittest.skip("Initial zoom currently not working")
 class ChromeOSM(glPlaneBase, ChromeTest):
     testCase = glPlaneBase.testCase + ('chrome',)
 

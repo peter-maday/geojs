@@ -3,7 +3,6 @@
   "use strict";
 
   var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  var cssColors;
 
   /**
    * Takes a variable number of arguments and returns the first numeric value
@@ -99,9 +98,13 @@
      * Convert a color from hex value or css name to rgb objects
      */
     convertColor: function (color) {
+      if (color.r !== undefined && color.g !== undefined &&
+          color.b !== undefined) {
+        return color;
+      }
       if (typeof color === "string") {
-        if (cssColors.hasOwnProperty(color)) {
-          color = cssColors[color];
+        if (geo.util.cssColors.hasOwnProperty(color)) {
+          color = geo.util.cssColors[color];
         } else if (color.charAt(0) === "#") {
           color = parseInt(color.slice(1), 16);
         }
@@ -158,7 +161,7 @@
     }
   };
 
-  cssColors = {
+  geo.util.cssColors = {
     aliceblue: 0xf0f8ff,
     antiquewhite: 0xfaebd7,
     aqua: 0x00ffff,

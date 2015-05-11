@@ -4,6 +4,7 @@
  *
  * Creates a new map inside of the given HTML layer (Typically DIV)
  * @class
+ * @extends geo.sceneObject
  * @returns {geo.map}
  */
 //////////////////////////////////////////////////////////////////////////////
@@ -23,6 +24,7 @@ geo.map = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   var m_this = this,
+      s_exit = this._exit,
       m_x = 0,
       m_y = 0,
       m_node = $(arg.node),
@@ -39,12 +41,11 @@ geo.map = function (arg) {
       m_transition = null,
       m_queuedTransition = null,
       m_clock = null,
-      m_bounds = {},
-      m_zoomCallback = null;
-
+      m_bounds = {};
 
   arg.center = geo.util.normalizeCoordinates(arg.center);
   arg.autoResize = arg.autoResize === undefined ? true : arg.autoResize;
+  arg.clampBounds = arg.clampBounds === undefined ? true : arg.clampBounds;
 
   ////////////////////////////////////////////////////////////////////////////
   /**
@@ -91,7 +92,7 @@ geo.map = function (arg) {
    */
   ////////////////////////////////////////////////////////////////////////////
   this.zoom = function (val, direction) {
-    var base, evt, previousCenter;
+    var base, evt, recenter = false;
     if (val === undefined) {
       return m_zoom;
     }
@@ -113,30 +114,23 @@ geo.map = function (arg) {
       base.renderer().geoTrigger(geo.event.zoom, evt, true);
     }
 
-    if (evt.geo.preventDefault) {
-      return;
+    recenter = evt.center;
+    if (!evt.geo.preventDefault) {
+
+      m_zoom = val;
+      m_this._updateBounds();
+
+      m_this.children().forEach(function (child) {
+        child.geoTrigger(geo.event.zoom, evt, true);
+      });
+
+      m_this.modified();
     }
 
-    m_zoom = val;
-    previousCenter = m_center;
-    m_center = m_this.displayToGcs({
-      x: m_width / 2,
-      y: m_height / 2
-    });
-
-    evt.gcsDelta = {
-      x: m_center.x - previousCenter.x,
-      y: m_center.y - previousCenter.y
-    };
-    m_this._updateBounds();
-
-    m_this.children().forEach(function (child) {
-      child.geoTrigger(geo.event.zoom, evt, true);
-    });
-
-    m_this.modified();
-    if (m_zoomCallback) {
-      m_zoomCallback();
+    if (evt.center) {
+      m_this.center(recenter);
+    } else {
+      m_this.pan({x: 0, y: 0});
     }
     return m_this;
   };
@@ -150,9 +144,38 @@ geo.map = function (arg) {
    * @returns {geo.map}
    */
   ////////////////////////////////////////////////////////////////////////////
-  this.pan = function (delta) {
+  this.pan = function (delta, force) {
     var base = m_this.baseLayer(),
-        evt;
+        evt, pt, corner1, corner2;
+
+    if (arg.clampBounds && !force && m_width && m_height) {
+      pt = m_this.displayToGcs({
+        x: delta.x,
+        y: delta.y
+      });
+
+      corner1 = m_this.gcsToDisplay({
+        x: -180,
+        y: 82
+      });
+      corner2 = m_this.gcsToDisplay({
+        x: 180,
+        y: -82
+      });
+
+      if (corner1.x > 0 && corner2.x < m_width) {
+        // if the map is too small horizontally
+        delta.x = (-corner1.x + m_width - corner2.x) / 2;
+      } else {
+        delta.x = Math.max(Math.min(delta.x, -corner1.x), m_width - corner2.x);
+      }
+      if (corner1.y > 0 && corner2.y < m_height) {
+        // if the map is too small horizontally
+        delta.y = (-corner1.y + m_height - corner2.y) / 2;
+      } else {
+        delta.y = Math.max(Math.min(delta.y, -corner1.y), m_height - corner2.y);
+      }
+    }
 
     evt = {
       geo: {},
@@ -168,7 +191,6 @@ geo.map = function (arg) {
     if (evt.geo.preventDefault) {
       return;
     }
-
     m_center = m_this.displayToGcs({
       x: m_width / 2,
       y: m_height / 2
@@ -192,7 +214,7 @@ geo.map = function (arg) {
    * @returns {Object|geo.map}
    */
   ////////////////////////////////////////////////////////////////////////////
-  this.center = function (coordinates) {
+  this.center = function (coordinates, force) {
     var newCenter, currentCenter;
 
     if (coordinates === undefined) {
@@ -208,7 +230,7 @@ geo.map = function (arg) {
     m_this.pan({
       x: currentCenter.x - newCenter.x,
       y: currentCenter.y - newCenter.y
-    }, true);
+    }, force);
 
     return m_this;
   };
@@ -217,7 +239,6 @@ geo.map = function (arg) {
   /**
    * Add layer to the map
    *
-   * @method addLayer
    * @param {geo.layer} layer to be added to the map
    * @return {geom.map}
    */
@@ -256,7 +277,6 @@ geo.map = function (arg) {
   /**
    * Remove layer from the map
    *
-   * @method removeLayer
    * @param {geo.layer} layer that should be removed from the map
    * @return {geo.map}
    */
@@ -283,12 +303,10 @@ geo.map = function (arg) {
     return layer;
   };
 
-
   ////////////////////////////////////////////////////////////////////////////
   /**
    * Toggle visibility of a layer
    *
-   *  @method toggleLayer
    *  @param {geo.layer} layer
    *  @returns {Boolean}
    */
@@ -339,11 +357,8 @@ geo.map = function (arg) {
     });
 
     m_this._updateBounds();
+    m_this.pan({x: 0, y: 0});
     m_this.modified();
-
-    if (m_zoomCallback) {
-      m_zoomCallback();
-    }
 
     return m_this;
   };
@@ -428,13 +443,19 @@ geo.map = function (arg) {
         // This assumes that the base layer is initially centered at
         // (0, 0).  May want to add an explicit call to the base layer
         // to set a given center.
-        m_this.center(arg.center);
+        m_this.center(arg.center, true);
       }
       save = m_zoom;
       m_zoom = null;
       m_this.zoom(save);
 
       m_this._updateBounds();
+
+      // This forces the map into a state with valid bounds
+      // when clamping is on.  The original call to center
+      // is forced to initialize the camera position in the
+      // base layer so no adjustment is done there.
+      m_this.pan({x: 0, y: 0});
       return m_this;
     }
     return m_baseLayer;
@@ -484,7 +505,7 @@ geo.map = function (arg) {
     if (!layer) {
       renderer = opts.renderer;
       if (!renderer) {
-        renderer = "d3Renderer";
+        renderer = "d3";
       }
       layer = m_this.createLayer("feature", {renderer: renderer});
     }
@@ -536,7 +557,7 @@ geo.map = function (arg) {
    * Exit this map
    */
   ////////////////////////////////////////////////////////////////////////////
-  this._exit = function () {
+  this.exit = function () {
     var i, layers = m_this.children();
     for (i = 0; i < layers.length; i += 1) {
       layers[i]._exit();
@@ -545,12 +566,15 @@ geo.map = function (arg) {
       m_this.interactor().destroy();
       m_this.interactor(null);
     }
+    m_this.node().off(".geo");
+    $(window).off("resize", resizeSelf);
+    s_exit();
   };
 
   this._init(arg);
 
   // set up drag/drop handling
-  this.node().on("dragover", function (e) {
+  this.node().on("dragover.geo", function (e) {
     var evt = e.originalEvent;
 
     if (m_this.fileReader()) {
@@ -559,7 +583,7 @@ geo.map = function (arg) {
       evt.dataTransfer.dropEffect = "copy";
     }
   })
-  .on("drop", function (e) {
+  .on("drop.geo", function (e) {
     var evt = e.originalEvent, reader = m_this.fileReader(),
         i, file;
 
@@ -769,7 +793,6 @@ geo.map = function (arg) {
         }
 
         if (next) {
-          console.log(next);
           m_queuedTransition = null;
           m_this.transition(next);
         }
@@ -840,45 +863,121 @@ geo.map = function (arg) {
 
   ////////////////////////////////////////////////////////////////////////////
   /**
-   * Get the locations of the current map corners as latitudes/longitudes.
-   * The return value of this function is an object as follows: ::
+   * Get/set the locations of the current map corners as latitudes/longitudes.
+   * When provided the argument should be an object containing the keys
+   * lowerLeft and upperRight declaring the desired new map bounds.  The
+   * new bounds will contain at least the min/max lat/lngs provided.  In any
+   * case, the actual new bounds will be returned by this function.
    *
-   *    {
-   *        lowerLeft: {x: ..., y: ...},
-   *        upperLeft: {x: ..., y: ...},
-   *        lowerRight: {x: ..., y: ...},
-   *        upperRight: {x: ..., y: ...}
-   *    }
-   *
-   * @todo Provide a setter
+   * @param {geo.geoBounds} [bds] The requested map bounds
+   * @return {geo.geoBounds} The actual new map bounds
    */
   ////////////////////////////////////////////////////////////////////////////
-  this.bounds = function () {
+  this.bounds = function (bds) {
+    var nav;
+
+    if (bds === undefined) {
+      return m_bounds;
+    }
+
+    nav = m_this.zoomAndCenterFromBounds(bds);
+    m_this.zoom(nav.zoom);
+    m_this.center(nav.center);
     return m_bounds;
   };
 
-
   ////////////////////////////////////////////////////////////////////////////
   /**
-   * @todo Move spring and momentum to map and avoid this abomination
-   * @private
+   * Get the center zoom level necessary to display the given lat/lon bounds.
+   *
+   * @param {geo.geoBounds} [bds] The requested map bounds
+   * @return {object} Object containing keys "center" and "zoom"
    */
   ////////////////////////////////////////////////////////////////////////////
-  this._zoomCallback = function (callback) {
-    m_zoomCallback = callback;
-  };
+  this.zoomAndCenterFromBounds = function (bds) {
+    var ll, ur, dx, dy, zx, zy, center;
 
+    // Caveat:
+    // Much of the following is invalid for alternative map projections.  These
+    // computations should really be defered to the base layer, but there is
+    // no clear path for doing that with the current base layer api.
+
+    // extract bounds info and check for validity
+    ll = geo.util.normalizeCoordinates(bds.lowerLeft || {});
+    ur = geo.util.normalizeCoordinates(bds.upperRight || {});
+
+    if (ll.x >= ur.x || ll.y >= ur.y) {
+      throw new Error("Invalid bounds provided");
+    }
+
+    center = {
+      x: (ll.x + ur.x) / 2,
+      y: (ll.y + ur.y) / 2
+    };
+
+    // calculate the current extend
+    dx = m_bounds.upperRight.x - m_bounds.lowerLeft.x;
+    dy = m_bounds.upperRight.y - m_bounds.lowerLeft.y;
+
+    // calculate the zoom levels necessary to fit x and y bounds
+    zx = m_zoom - Math.log2((ur.x - ll.x) / dx);
+    zy = m_zoom - Math.log2((ur.y - ll.y) / dy);
+
+    return {
+      zoom: Math.min(zx, zy),
+      center: center
+    };
+  };
 
   this.interactor(arg.interactor || geo.mapInteractor());
   this.clock(arg.clock || geo.clock());
 
+  function resizeSelf() {
+    m_this.resize(0, 0, m_node.width(), m_node.height());
+  }
+
   if (arg.autoResize) {
-    $(window).resize(function () {
-      m_this.resize(0, 0, m_node.width(), m_node.height());
-    });
+    $(window).resize(resizeSelf);
   }
 
   return this;
+};
+
+/**
+ * General object specification for map types.  Any additional
+ * values in the object are passed to the map constructor.
+ * @typedef geo.map.spec
+ * @type {object}
+ * @property {object[]} [data=[]] The default data array to
+ * apply to each feature if none exists
+ * @property {geo.layer.spec[]} [layers=[]] Layers to create
+ */
+
+/**
+ * Create a map from an object.  Any errors in the creation
+ * of the map will result in returning null.
+ * @param {geo.map.spec} spec The object specification
+ * @returns {geo.map|null}
+ */
+geo.map.create = function (spec) {
+  "use strict";
+
+  var map = geo.map(spec);
+
+  if (!map) {
+    console.warn("Could not create map.");
+    return null;
+  }
+
+  spec.data = spec.data || [];
+  spec.layers = spec.layers || [];
+
+  spec.layers.forEach(function (l) {
+    l.data = l.data || spec.data;
+    l.layer = geo.layer.create(map, l);
+  });
+
+  return map;
 };
 
 inherit(geo.map, geo.sceneObject);

@@ -6,9 +6,9 @@ from selenium_test import FirefoxTest, ChromeTest,\
     setUpModule, tearDownModule
 
 
-class glPointsBase(object):
+class glPointsNoFillBase(object):
     testCase = ('glPointsNoFill',)
-    testRevision = 4
+    testRevision = 5
 
     def loadPage(self):
         self.resizeWindow(640, 480)
@@ -22,14 +22,12 @@ class glPointsBase(object):
         self.screenshotTest(testName)
 
 
-@unittest.skip("Initial zoom currently not working")
-class FirefoxOSM(glPointsBase, FirefoxTest):
-    testCase = glPointsBase.testCase + ('firefox',)
+class FirefoxOSM(glPointsNoFillBase, FirefoxTest):
+    testCase = glPointsNoFillBase.testCase + ('firefox',)
 
 
-@unittest.skip("Initial zoom currently not working")
-class ChromeOSM(glPointsBase, ChromeTest):
-    testCase = glPointsBase.testCase + ('chrome',)
+class ChromeOSM(glPointsNoFillBase, ChromeTest):
+    testCase = glPointsNoFillBase.testCase + ('chrome',)
 
 
 if __name__ == '__main__':
