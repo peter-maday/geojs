@@ -19,16 +19,10 @@ geo.gl.vglRenderer = function (arg) {
   var m_this = this,
       s_exit = this._exit,
       m_contextRenderer = null,
-      m_canvas = $(document.createElement("canvas")),
-      m_viewer = vgl.viewer(m_canvas.get(0)),
+      m_viewer = null,
       m_width = 0,
       m_height = 0,
       s_init = this._init;
-
-  m_viewer.init();
-  m_contextRenderer = m_viewer.renderWindow().activeRenderer();
-  m_canvas.attr("class", "webgl-canvas");
-  m_contextRenderer.setResetScene(false);
 
   /// TODO: Move this API to the base class
   ////////////////////////////////////////////////////////////////////////////
@@ -233,13 +227,18 @@ geo.gl.vglRenderer = function (arg) {
 
     s_init.call(m_this);
 
-    m_this.canvas($(m_viewer.canvas()));
+    var canvas = $(document.createElement("canvas"));
+    canvas.attr("class", "webgl-canvas");
+    m_this.canvas(canvas);
+    $(m_this.layer().node().get(0)).append(canvas);
+    m_viewer = vgl.viewer(canvas.get(0));
+    m_viewer.init();
+    m_contextRenderer = m_viewer.renderWindow().activeRenderer();
+    m_contextRenderer.setResetScene(false);
+
     if (m_viewer.renderWindow().renderers().length > 0) {
       m_contextRenderer.setLayer(m_viewer.renderWindow().renderers().length);
-      m_contextRenderer.setResetScene(false);
     }
-
-    m_this.layer().node().append(m_this.canvas());
 
     return m_this;
   };
@@ -303,7 +302,7 @@ geo.gl.vglRenderer = function (arg) {
   };
 
   // connect to interactor events
-  this.geoOn(geo.event.pan, function (evt) {
+  m_this.layer().geoOn(geo.event.pan, function (evt) {
     var vglRenderer = m_this.contextRenderer(),
         camera,
         focusPoint,
@@ -315,13 +314,13 @@ geo.gl.vglRenderer = function (arg) {
         layer = m_this.layer();
 
     // only the base layer needs to respond
-    if (layer.map().baseLayer() !== layer) {
-      return;
-    }
+    // if (layer.map().baseLayer() !== layer) {
+    //   return;
+    // }
 
     // skip handling if the renderer is unconnected
     if (!vglRenderer || !vglRenderer.camera()) {
-      console.log("Pan event triggered on unconnected vgl renderer.");
+      console.log("Pan event triggered on unconnected VGL renderer.");
     }
 
     renderWindow = m_viewer.renderWindow();
@@ -366,7 +365,54 @@ geo.gl.vglRenderer = function (arg) {
     m_this._updateRendererCamera();
   });
 
-  this.geoOn(geo.event.zoom, function (evt) {
+  // m_this.geoOn(geo.event.zoom, function (evt) {
+  //   var vglRenderer = m_this.contextRenderer(),
+  //       camera,
+  //       renderWindow,
+  //       layer = m_this.layer(),
+  //       center,
+  //       dir,
+  //       focusPoint,
+  //       position,
+  //       newZ;
+
+  //   // only the base layer needs to respond
+  //   // if (layer.map().baseLayer() !== layer) {
+  //   //   return;
+  //   // }
+
+  //   // skip handling if the renderer is unconnected
+  //   if (!vglRenderer || !vglRenderer.camera()) {
+  //     console.log("Zoom event triggered on unconnected vgl renderer.");
+  //   }
+
+  //   renderWindow = m_viewer.renderWindow();
+  //   camera = vglRenderer.camera();
+  //   focusPoint = camera.focalPoint();
+  //   position = camera.position();
+  //   newZ = 360 * Math.pow(2, -evt.zoomLevel);
+
+  //   evt.pan = null;
+  //   if (evt.screenPosition) {
+  //     center = renderWindow.displayToWorld(
+  //       evt.screenPosition.x,
+  //       evt.screenPosition.y,
+  //       focusPoint,
+  //       vglRenderer
+  //     );
+  //     dir = [center[0] - position[0], center[1] - position[1], center[2] - position[2]];
+  //     evt.center = layer.fromLocal({
+  //       x: position[0] + dir[0] * (1 - newZ / position[2]),
+  //       y: position[1] + dir[1] * (1 - newZ / position[2])
+  //     });
+  //   }
+
+  //   camera.setPosition(position[0], position[1], 360 * Math.pow(2, -evt.zoomLevel));
+
+  //   m_this._updateRendererCamera();
+  // });
+
+m_this.layer().geoOn(geo.event.zoom, function (evt) {
     var vglRenderer = m_this.contextRenderer(),
         camera,
         renderWindow,
@@ -378,9 +424,9 @@ geo.gl.vglRenderer = function (arg) {
         newZ;
 
     // only the base layer needs to respond
-    if (layer.map().baseLayer() !== layer) {
-      return;
-    }
+    // if (layer.map().baseLayer() !== layer) {
+    //   return;
+    // }
 
     // skip handling if the renderer is unconnected
     if (!vglRenderer || !vglRenderer.camera()) {
